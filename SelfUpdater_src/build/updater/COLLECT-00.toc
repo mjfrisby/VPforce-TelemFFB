@@ -1,0 +1,3 @@
+([('updater.exe',
+   'C:\\Users\\micah\\PycharmProjects\\TelemFFB_Self_Updater\\SelfUpdater_src\\dist\\updater.exe',
+   'EXECUTABLE')],)
