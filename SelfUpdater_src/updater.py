@@ -19,7 +19,7 @@ import sys
 parser = argparse.ArgumentParser(description='TelemFFB Updater App')
 parser.add_argument('--url', help='TelemFFB Zip File URL', default=None)
 parser.add_argument('--path', help='TelemFFB install directory')
-parser.add_argument('--current_version', help='Version of TelemFFB currently installed', default='dummy_text ')
+parser.add_argument('--current_version', help='Version of TelemFFB currently installed', default='dummy_text')
 
 args = parser.parse_args()
 
@@ -284,10 +284,8 @@ class App(QMainWindow):
         # Close the updater app
         self.close()
 
-def check_pathing():
-    telem_location = os.path.join(g_application_path, g_executable_name)
-    print(telem_location)
-    if not os.path.exists(telem_location) and getattr(sys, 'frozen', False):
+def check_runtime():
+    if args.current_version == 'dummy_text' and getattr(sys, 'frozen', False):
         QMessageBox.critical(None, "ERROR", "This application is not intended to be run in a standalone fashion.\n\nIf an update is available, you will be prompted to update upon starting TelemFFB")
         sys.exit()
 
@@ -304,7 +302,7 @@ def main():
     window = App()
     window.show()
     print(g_latest_version, g_latest_url)
-    check_pathing()
+    check_runtime()
     app.exec_()
 
 

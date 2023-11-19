@@ -625,6 +625,14 @@ class MainWindow(QMainWindow):
         reset_action.triggered.connect(self.reset_all_effects)
         utilities_menu.addAction(reset_action)
 
+        update_action = QAction('Update TelemFFB', self)
+        update_action.triggered.connect(self.update_from_menu)
+        utilities_menu.addAction(update_action)
+        if utils.fetch_latest_version():
+            update_action.setDisabled(False)
+        else:
+            update_action.setDisabled(True)
+
         # menubar.setStyleSheet("QMenu::item:selected { color: red; }")
 
         # Create a line beneath the menu bar
@@ -888,6 +896,10 @@ class MainWindow(QMainWindow):
         # Perform any cleanup or save operations here
         QCoreApplication.instance().quit()
 
+    def update_from_menu(self):
+        if perform_update(auto=False):
+            QCoreApplication.instance().quit()
+
     def update_telemetry(self, data: dict):
         try:
             items = ""
@@ -914,7 +926,46 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             traceback.print_exc()
+def perform_update(auto=True):
+    config = get_config()
+    ignore_auto_updates = utils.sanitize_dict(config["system"]).get("ignore_auto_updates", 0)
+    update_ans = QMessageBox.No
+    proceed_ans = QMessageBox.Cancel
+    # is_exe = getattr(sys, 'frozen', False)
+    is_exe = True
+    if is_exe and _update_available and not ignore_auto_updates:
+        # vers, url = utils.fetch_latest_version()
+        update_ans = QMessageBox.Yes
+        if auto:
+            update_ans = QMessageBox.information(None, "Update Available!!",
+                                                 f"A new version of TelemFFB is available ({_latest_version}).\n\nWould you like to automatically download and install it now?\n\nYou may also update later from the Utilities menu, or the\nnext time TelemFFB starts.",
+                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
+        if update_ans == QMessageBox.Yes:
+            proceed_ans = QMessageBox.information(None, "TelemFFB Updater",
+                                                  f"TelemFFB will now exit and launch the updater.\n\nOnce the update is complete, TelemFFB will restart.\n\nPress OK to continue",
+                                                  QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Cancel)
+
+        if proceed_ans == QMessageBox.Ok:
+
+            global _current_version
+            updater_source_path = os.path.join(os.path.dirname(__file__), 'updater', 'updater.exe')
+            updater_execution_path = os.path.join(os.path.dirname(__file__), 'updater.exe')
+
+            # Copy the updater executable with forced overwrite
+            shutil.copy2(updater_source_path, updater_execution_path)
+
+            subprocess.Popen([updater_execution_path, "--current_version", _current_version],
+                             cwd=os.path.dirname(__file__))
+            return True
+    else:
+        try:
+            updater_execution_path = os.path.join(os.path.dirname(__file__), 'updater.exe')
+            if os.path.exists(updater_execution_path):
+                os.remove(updater_execution_path)
+        except Exception as e:
+            print(e)
+    return False
 def main():
     app = QApplication(sys.argv)
     global d
@@ -1003,39 +1054,7 @@ def main():
     except:
         logging.exception("Error loading MSFS enable flag from config file")
 
-    ignore_auto_updates = utils.sanitize_dict(config["system"]).get("ignore_auto_updates", 0)
-    update_ans = QMessageBox.No
-    proceed_ans = QMessageBox.Cancel
-    run = True
-    is_exe = getattr(sys, 'frozen', False)
-    # is_exe = True
-    if is_exe and _update_available and not ignore_auto_updates:
-        # vers, url = utils.fetch_latest_version()
-        update_ans = QMessageBox.information(None, "Update Available!!", f"A new version of TelemFFB is available ({_latest_version}).\n\nWould you like to automatically download and install it now?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-
-        if update_ans == QMessageBox.Yes:
-            proceed_ans = QMessageBox.information(None, "", f"TelemFFB will now exit and launch the updater.\n\nOnce the update is complete, TelemFFB will restart.\n\nPress OK to continue", QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Cancel)
-
-        if proceed_ans == QMessageBox.Ok:
-            run = False
-
-            global _current_version
-            updater_source_path = os.path.join(os.path.dirname(__file__), 'updater', 'updater.exe')
-            updater_execution_path = os.path.join(os.path.dirname(__file__), 'updater.exe')
-
-            # Copy the updater executable with forced overwrite
-            shutil.copy2(updater_source_path, updater_execution_path)
-
-            subprocess.Popen([updater_execution_path, "--current_version", _current_version], cwd=os.path.dirname(__file__))
-
-    else:
-        try:
-            updater_execution_path = os.path.join(os.path.dirname(__file__), 'updater.exe')
-            if os.path.exists(updater_execution_path):
-                os.remove(updater_execution_path)
-        except Exception as e:
-            print(e)
-    if run:
+    if not perform_update():
         app.exec_()
     dcs.quit()
     il2.quit()
