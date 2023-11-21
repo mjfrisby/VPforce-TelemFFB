@@ -929,10 +929,12 @@ class MainWindow(QMainWindow):
 def perform_update(auto=True):
     config = get_config()
     ignore_auto_updates = utils.sanitize_dict(config["system"]).get("ignore_auto_updates", 0)
+    if not auto:
+        ignore_auto_updates = False
     update_ans = QMessageBox.No
     proceed_ans = QMessageBox.Cancel
-    # is_exe = getattr(sys, 'frozen', False)
-    is_exe = True
+    is_exe = getattr(sys, 'frozen', False) #TODO: Make sure to swap these comment-outs before build to commit - this line should be active, next line should be commented out
+    # is_exe = True
     if is_exe and _update_available and not ignore_auto_updates:
         # vers, url = utils.fetch_latest_version()
         update_ans = QMessageBox.Yes

@@ -27,6 +27,7 @@ test = False
 g_latest_version = None
 g_latest_url = None
 g_current_version = args.current_version
+g_url_is_good = False
 
 if getattr(sys, 'frozen', False):
     g_application_path = os.path.dirname(sys.executable)
@@ -36,7 +37,7 @@ elif __file__:
 g_executable_name = 'VPforce-TelemFFB.exe'
 
 def fetch_latest_version():
-
+    global g_url_is_good
     ctx = ssl._create_unverified_context()
 
     current_version = args.current_version
@@ -51,13 +52,16 @@ def fetch_latest_version():
             latest = json.loads(req.read().decode())
             latest_version = latest["version"]
             latest_url = url + latest["filename"]
-    except:
-        logging.exception(f"Error checking latest version status: {url}")
+    except Exception as e:
+        logging.exception(f"Error checking latest version status: {url}\n{e}")
+        g_url_is_good = e
 
     if current_version != latest_version and latest_version is not None and latest_url is not None:
         logging.debug(f"Current version: {current_version} | Latest version: {latest_version}")
+        g_url_is_good = True
         return latest_version, latest_url
     elif current_version == latest_version:
+        g_url_is_good = False
         return False
     else:
         return None
@@ -78,6 +82,10 @@ class Downloader(QThread):
 
     def download(self):
         response = requests.get(self.url, stream=True)
+        if response.status_code != 200:
+            QMessageBox.critical(None, "Error downloading latest version info",
+                                 f"There was an error downloading the latest version:\n\nHTTP Status Code:  {response}\n\nThe updater will now exit")
+            sys.exit(-1)
         total_size = int(response.headers.get('content-length', 0))
         current_size = 0
         self.update_status_label.emit("Downloading Update:")
@@ -146,6 +154,11 @@ class Downloader(QThread):
 class App(QMainWindow):
     def __init__(self):
         super().__init__()
+        global g_url_is_good
+        if not g_url_is_good is True:
+            QMessageBox.critical(None, "Error fetching latest version info", f"There was an error retrieving the latest version information:\n{g_url_is_good}\n\nThe updater will now exit")
+            sys.exit(-1)
+
         self.setWindowTitle("VPforce TelemFFB Updater")
         self.setGeometry(100, 100, 400, 250)
 
@@ -293,7 +306,10 @@ def check_runtime():
 def main():
     global g_latest_version
     global g_latest_url
-    g_latest_version, g_latest_url = fetch_latest_version()
+    try:
+        g_latest_version, g_latest_url = fetch_latest_version()
+    except Exception as e:
+        pass
 
     if args.url is None:
         args.url = g_latest_url
