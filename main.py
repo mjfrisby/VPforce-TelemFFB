@@ -1206,7 +1206,8 @@ class Ui_TeleplotDialog(object):
         self.label_4.setText(QCoreApplication.translate("TeleplotDialog", u"List:", None))
         self.label_3.setText(QCoreApplication.translate("TeleplotDialog", u"Space separated list of Telemetry variables", None))
         self.label_2.setText(QCoreApplication.translate("TeleplotDialog", u"Port:", None))
-        self.label.setText(QCoreApplication.translate("TeleplotDialog", u"Open a browser to teleplot.fr, record port number", None))
+        self.label.setText(QCoreApplication.translate("TeleplotDialog", u"Open a browser to <a href='https://teleplot.fr'>teleplot.fr</a>, record port number", None))
+        self.label.setOpenExternalLinks(True)
         self.label_6.setText(QCoreApplication.translate("TeleplotDialog", u"or select from active: ", None))
         self.pb_Select.setText(QCoreApplication.translate("TeleplotDialog", u"Select...", None))
         self.label_5.setText(QCoreApplication.translate("TeleplotDialog", u"To stop sending teleplot data,\n"
