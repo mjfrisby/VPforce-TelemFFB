@@ -421,7 +421,6 @@
 		<Grouping>SpringCenter</Grouping>
 		<order>20</order>
 		<name>aircraft_is_spring_centered</name>
-		<any>true</any>
 		<MSFS>true</MSFS>
 		<datatype>bool</datatype>
 		<info>Enable spring centering for aircraft while maintaining dynamic forces&lt;br&gt;&lt;br&gt; Do not use together with FBW</info>
