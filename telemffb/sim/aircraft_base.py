@@ -222,9 +222,15 @@ class AircraftBase(object):
         self.spring_y = FFBReport_SetCondition(parameterBlockOffset=1)
 
     def step_value_over_time(self, key, value, timeframe_ms, dst_val, floatpoint=False):
+        '''
+        This function creates an entry in the  stepper dictionary which can be used to track the progress of driving a
+        value from "a to b" over a period of time across multiple passes through the effects loop.
+        '''
+
         current_time_ms = time.perf_counter() * 1000  # Start time for the current step
         # current_time_end = current_time_start  # End time for the current step (initially the same as start time)
 
+        # add a new key to the dictionary if one does not exist and initialize the tracking variables
         if key not in self.stepper_dict:
             self.stepper_dict[key] = {
                 'value': value,
@@ -250,27 +256,28 @@ class AircraftBase(object):
 
         data = self.stepper_dict[key]
 
-        iteration_ms = current_time_ms - data['last_iteration_ms']
+        iteration_ms = current_time_ms - data['last_iteration_ms']  # calculate time since last iteration
 
-        data['last_iteration_ms'] = current_time_ms
+        data['last_iteration_ms'] = current_time_ms  # reset iteration timestamp to current timestamp
 
-        delta_to_go = data['dst_val'] - data['value']
-        time_to_go = data['end_time'] - current_time_ms
+        delta_to_go = data['dst_val'] - data['value']  # calculate distance left to move the value
+        time_to_go = data['end_time'] - current_time_ms  # calculate time left to move the value to destination
 
-        step_size = (iteration_ms / time_to_go) * delta_to_go
+        step_size = (iteration_ms / time_to_go) * delta_to_go  # calculate step size required to reach target at time
 
-        if data['value'] == data['dst_val']:
+        if data['value'] == data['dst_val']:  # if we have reached the dst value, delete the key and return the value
             del self.stepper_dict[key]
             return data['value']
 
         elapsed_time_ms = (current_time_ms - data['start_time'])
 
-        if elapsed_time_ms >= timeframe_ms:
+        if elapsed_time_ms >= timeframe_ms:  # if the elapsed time is greater than the given timeframe, return the destination value
             data['value'] = data['dst_val']
             return data['dst_val']
 
         val = value + step_size
-        if not floatpoint:
+
+        if not floatpoint:  # if floatpoint is not specified, return a rounded integer value
             val = round(val)
         data['value'] = val
         # print(f"value out = {data['value']}")
@@ -398,10 +405,9 @@ class AircraftBase(object):
             return
         force = round(utils.scale_clamp(gs, (0, self.touchdown_effect_max_gs), (0,self.touchdown_effect_max_force)), 2)
 
-        if force:
-            logging.info(f"Touchdown Effect: Realtime Gs: {gs}, Force:{force}")
-        telem_data["_gs"] = gs
-        telem_data["_force"] = force
+        logging.debug(f"Touchdown Effect: Realtime Gs: {gs}, Force:{force}")
+        # telem_data["_gs"] = gs
+        # telem_data["_force"] = force
         effects['touchdown'].constant(force, 180).start()
 
 
@@ -688,7 +694,7 @@ class AircraftBase(object):
             logging.debug(f"Flaps Pos: {flapspos}")
             effects["flapsmovement"].periodic(180, self.flaps_motion_intensity, 0, 3).start()
         else:
-            effects.dispose("flapsmovement")
+            effects["flapsmovement"].stop(destroy_after=5000)
 
     def _update_canopy(self, canopypos):
 
@@ -697,7 +703,7 @@ class AircraftBase(object):
             logging.debug(f"Canopy Pos: {canopypos}")
             effects["canopymovement"].periodic(120, self.canopy_motion_intensity, 0, 3).start()
         else:
-            effects.dispose("canopymovement")
+            effects["canopymovement"].stop(destroy_after=5000)
 
     def _update_landing_gear(self, gearpos, tas):
         if self._sim_is_xplane():
@@ -1189,7 +1195,7 @@ class AircraftBase(object):
         effects["je_rumble_1_1"].periodic(rt_freq, intensity, 0, effect_index).start()
         effects["je_rumble_1_2"].periodic(rt_freq + r1_modulation, intensity, 0, effect_index).start()
         effects["je_rumble_2_1"].periodic(rt_freq2, intensity, 90, effect_index, phase=phase_offset).start()
-        effects["je_rumble_2_2"].periodic(rt_freq2 + r2_modulation, intensity, 90, effect_index, phase=phase_offset).start()
+        effects["je_rumble_2_2"].periodic(rt_freq2 + r2_modulation, intensity, 90, effect_index, phase=phase_offset+30).start()
         logging.debug(f"JE-M1={r1_modulation}, F1-1={rt_freq}, F1-2={round(rt_freq + r1_modulation,4)} | JE-M2 = {r2_modulation}, F2-1={rt_freq2}, F2-2={round(rt_freq2 + r2_modulation, 4)} ")
 
 
@@ -1297,7 +1303,7 @@ class AircraftBase(object):
             if isinstance(rrpm, list):
                 rrpm = rrpm[0]
         else:
-            rrpm = telem_data.get("RotorRPM")
+            rrpm = telem_data.get("RotorRPM", 0)
             if isinstance(rrpm, list):
                 rrpm = max(rrpm)
         mod = telem_data.get("N")
@@ -1337,7 +1343,7 @@ class AircraftBase(object):
     def _override_pedal_spring(self, telem_data):
         if not self.is_pedals(): return
 
-        input_data = HapticEffect.device.getInput()
+        input_data = HapticEffect.device.get_input()
         phys_x, phys_y = input_data.axisXY()
         ## 0=DCS Default
         ## 1=spring disabled

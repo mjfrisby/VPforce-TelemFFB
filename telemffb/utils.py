@@ -58,6 +58,21 @@ def overrides(interface_class):
         return method
     return overrider
 
+def millis() -> int:
+    """return millisecond timer
+
+    :return: milliseconds
+    :rtype: int
+    """
+    return time.perf_counter_ns() // 1000000
+
+def micros() -> int:
+    """return microsecond timer
+
+    :return: microseconds
+    :rtype: int
+    """
+    return time.perf_counter_ns() // 1000
 
 class Smoother:
     def __init__(self):
@@ -97,6 +112,13 @@ class Smoother:
 
 
 class EffectTranslator:
+    """
+    Effects translator is used to display "human-readable text" in the UI for effects that are active.  In the
+    dictionary, the "key" is the actual effect instance name used during creation.  The "value" is a list containing
+    the desired description that will be displayed in the UI, and the applicable setting variable.  The setting
+    variable name is used to change the color of the slider handle in the settings page when that particular effect
+    is active
+    """
 
     effect_dict = {
         "ab_rumble_1_1": ["Afterburner Rumble", "afterburner_effect_intensity"],
@@ -161,6 +183,7 @@ class EffectTranslator:
         "spoilerbuffet2-2": ["Spoiler Buffeting", "spoiler_buffet_intensity"],
         "spoilermovement": ["Spoiler Motion", "spoiler_motion_intensity"],
         "stick_shaker" : ["Stick Shaker","stick_shaker_intensity"],
+        "touchdown": ["Touch-down Effect", "touchdown_effect_max_force"],
         "trim_spring": ["Trim Override Spring", ""],
         "control_weight": ["Control Weight", ""],
         "vrs_buffet": ["Vortex Ring State Buffeting", "vrs_effect_intensity"],
@@ -499,6 +522,7 @@ class SystemSettings(QSettings):
         'enableVPConfStartup': False,
         'pathVPConfStartup': '',
         'enableVPConfExit': False,
+        'enableVPConfGlobalDefault': False,
         'pathVPConfExit': '',
     }
 
@@ -1707,6 +1731,7 @@ def set_vpconf_profile(config_filepath, serial):
         logging.info(f"set_vpconf_profile - Loading vpconf for with: {vpconf_path} -config {config_filepath} -serial {serial}")
 
         subprocess.call([vpconf_path, "-config", config_filepath, "-serial", serial], cwd=workdir, env=env, shell=True)
+        G.current_vpconf_profile = config_filepath
     else:
         logging.error("Unable to find VPforce Configurator installation location")
 

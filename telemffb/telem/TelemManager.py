@@ -10,7 +10,6 @@ import telemffb.globals as G
 import telemffb.utils as utils
 import telemffb.xmlutils as xmlutils
 from telemffb.hw.ffb_rhino import HapticEffect
-from telemffb.settingsmanager import logging, pyqtSignal, utils, xmlutils
 from telemffb.sim import aircrafts_dcs, aircrafts_il2, aircrafts_msfs_xp
 from telemffb.telem.SimConnectManager import SimConnectManager
 from telemffb.utils import set_vpconf_profile
@@ -286,8 +285,18 @@ class TelemManager(QObject, threading.Thread):
                         logging.warning(f"Aircraft definition not found, using default class for {aircraft_name}")
                         Class = module.Aircraft
 
-                if "vpconf" in params:
+                if "vpconf" in params and G.current_vpconf_profile != params.get('vpconf', None):
+                    # Load the vpconf configurator file specified for the model, only if it is not the current
+                    # one loaded
                     set_vpconf_profile(params['vpconf'], HapticEffect.device.serial)
+                else:
+                    # If the current model does not have a vpconf specified, check whether the global default is
+                    # configured and enabled.  If so, load that vpconf profile
+                    load_global = G.system_settings.get("enableVPConfGlobalDefault", False)
+                    global_path = G.system_settings.get("pathVPConfStartup", "")
+                    if load_global and global_path != G.current_vpconf_profile:
+                        logging.info("Aircraft changed, current loaded vpconf no longer applicable, reloading configured global default profile")
+                        set_vpconf_profile(global_path, HapticEffect.device.serial)
 
                 if params.get('command_runner_enabled', False):
                     if params.get('command_runner_command', '') != '':
@@ -323,8 +332,18 @@ class TelemManager(QObject, threading.Thread):
                 updated_params = self.get_changed_params(params)
                 self.currentAircraft.apply_settings(updated_params)
 
-                if "vpconf" in updated_params:
+                if "vpconf" in updated_params and G.current_vpconf_profile != params.get('vpconf', None):
+                    # Load the vpconf configurator file specified for the model, only if it is not the current
+                    # one loaded
                     set_vpconf_profile(params['vpconf'], HapticEffect.device.serial)
+                else:
+                    # If the current model does not have a vpconf specified, check whether the global default is
+                    # configured and enabled.  If so, load that vpconf profile
+                    load_global = G.system_settings.get("enableVPConfGlobalDefault", False)
+                    global_path = G.system_settings.get("pathVPConfStartup", "")
+                    if load_global and global_path != G.current_vpconf_profile:
+                        logging.info("Aircraft changed, current loaded vpconf no longer applicable, reloading configured global default profile")
+                        set_vpconf_profile(global_path, HapticEffect.device.serial)
 
                 if params.get('command_runner_enabled', False):
                     if params.get('command_runner_command', '') != '' and 'Enter full path' not in params.get('command_runner_command', ''):
