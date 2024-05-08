@@ -201,7 +201,10 @@ class TelemManager(QObject, threading.Thread):
 
             except Exception:
                 logging.exception("Error Parsing Parameter: %s", repr(i))
-
+        if telem_data.get("reload", False):
+            # If the reload command is received from SC Manager, clear the aircraft info so that the instance is reloaded
+            self.currentAircraftName = ''
+            self.currentAircraft = None
         # Read telemetry sent via IPC channel from child instances and update local telemetry stream
         if G.master_instance and G.launched_instances:
             self._ipc_telem_data = G.ipc_instance._ipc_telem
