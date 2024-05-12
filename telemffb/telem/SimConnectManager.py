@@ -225,7 +225,6 @@ class SimConnectManager(threading.Thread):
         self.req_id = os.getpid()
         self.def_id = os.getpid()
         self.sv_dict = {}
-        self.reload = False
 
 
 
@@ -418,7 +417,6 @@ class SimConnectManager(threading.Thread):
                 break
             elif isinstance(recv, RECV_OPEN):
                 self.emit_event("Open")
-                self.reload = True  # If we get the Open event, trigger a reload in TelemManager in case it is a simconnect restart and effects have been destroyed
 
             elif isinstance(recv, RECV_EVENT):
                 if recv.uEventID == EV_PAUSED:
@@ -485,11 +483,6 @@ class SimConnectManager(threading.Thread):
                     else:
                     # print(f"!#$!#$!#$!#$ EMITTING PACKET LEN: {len(data)}")
                         self._stop_state = False
-                        if self.reload:
-                            # If we received new Open event which sets the reload flag, add reload to outgoing data
-                            # and set flag back to false
-                            data["reload"] = True
-                            self.reload = False
                         self.emit_packet(data)
                 else:
                     dbprint("green", f"**DEBUG*** got dispatch for OLD request: {recv.dwRequestID} defID: {recv.dwDefineID} | currrent defID: {self.def_id}")
