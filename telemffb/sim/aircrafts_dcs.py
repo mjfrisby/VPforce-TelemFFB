@@ -77,6 +77,7 @@ class Aircraft(AircraftBase):
 
     aoa_effect_enabled = 1
 
+    force_disable_collective_gain = 1
     collective_dampening_gain = 0
     collective_init = 0
     collective_spring_coeff_y = 0
@@ -200,121 +201,23 @@ class Aircraft(AircraftBase):
             logging.debug(f"Damage effect: dir={random_dir}, amp={random_amp}")
         elif not self.anything_has_changed("damage", damage, delta_ms=50):
             effects.dispose("damage")
-    # def get_aircraft_perf(self, telem_data):
-    #     perf_dict = {
-    #         'default': {
-    #             'Vs': 87 * knots,
-    #             'Vne': 438 * knots,
-    #         },
-    #         'TF-51D': {
-    #             'Vs': 87*knots,
-    #             'Vne': 438*knots,
-    #         },
-    #         'P-51D': {
-    #             'Vs': 87 * knots,
-    #             'Vne': 438 * knots,
-    #         },
-    #         'P-47D': {
-    #             'Vs': 94 * knots,
-    #             'Vne': 425 * knots,
-    #         },
-    #         'Spitfire': {
-    #             'Vs': 70 * knots,
-    #             'Vne': 390 * knots,
-    #         },
-    #         'FW-190A8': {
-    #             'Vs': 118 * knots,
-    #             'Vne': 370 * knots,
-    #         },
-    #         'FW-190D9': {
-    #             'Vs': 103 * knots,
-    #             'Vne': 370 * knots,
-    #         },
-    #         'Bf-109K-4': {
-    #             'Vs': 65 * knots,
-    #             'Vne': 470 * knots,
-    #         },
-    #         'I-16': {
-    #             'Vs': 45 * knots,
-    #             'Vne': 340 * knots,
-    #         },
-    #         'Mosquito': {
-    #             'Vs': 90 * knots,
-    #             'Vne': 415 * knots,
-    #         },
-    #         'F-15': {
-    #             'Vs': 130 * knots,
-    #             'Vne': 800 * knots,
-    #         },
-    #         'MiG-15': {
-    #             'Vs': 120 * knots,
-    #             'Vne': 620 * knots,
-    #         },
-    #         'MiG-19': {
-    #             'Vs': 140 * knots,
-    #             'Vne': 850 * knots,
-    #         },
-    #         'F-14': {
-    #             'Vs': 145 * knots,
-    #             'Vne': 700 * knots,
-    #         },
-    #         'AV8BNA': {
-    #             'Vs': 80 * knots,
-    #             'Vne': 560 * knots,
-    #         },
-    #         'M-2000': {
-    #             'Vs': 120 * knots,
-    #             'Vne': 750 * knots,
-    #         },
-    #         'Mirage-F1': {
-    #             'Vs': 120 * knots,
-    #             'Vne': 800 * knots,
-    #         },
-    #         'JF-17': {
-    #             'Vs': 110 * knots,
-    #             'Vne': 800 * knots,
-    #         },
-    #         'MB-339': {
-    #             'Vs': 90 * knots,
-    #             'Vne': 460 * knots,
-    #         },
-    #         'A-10C': {
-    #             'Vs': 120 * knots,
-    #             'Vne': 450 * knots,
-    #         },
-    #         'AJS37': {
-    #             'Vs': 120 * knots,
-    #             'Vne': 810 * knots,
-    #         },
-    #         'F-5E': {
-    #             'Vs': 110 * knots,
-    #             'Vne': 800 * knots,
-    #         },
-    #         'FA-18C': {
-    #             'Vs': 135 * knots,
-    #             'Vne': 850 * knots,
-    #         },
-    #         'F-16': {
-    #             'Vs': 140 * knots,
-    #             'Vne': 915 * knots,
-    #         },
-    #     }
-    #
-    #     ac = telem_data.get("N")
-    #     for aircraft, values in perf_dict.items():
-    #         # print(f"Checking >{aircraft}< against >{ac}<")
-    #         if aircraft in ac:
-    #             # logging.info(f"Found aircraft performance data for {ac} in entry {aircraft}")
-    #             return values
-    #
-    #     # logging.info(f"No aircraft performance data found for {ac} - using default")
-    #     return perf_dict.get('default')
 
     def _override_collective_spring(self, telem_data):
+        """
+        Overrides the spring on a collective to avoid DCS sending FFB events for the Y Axis.  By default sets gain to 0
+        with option to override with gain = 4096
+        """
         if not self.is_collective(): return
 
         self.spring = effects["collective_ap_spring"].spring()
         # self.damper = effects["collective_damper"].damper()
+        if not self.force_disable_collective_gain:
+            self.spring_y.negativeCoefficient = self.spring_y.positiveCoefficient = 4096
+            self.spring_y.cpOffset = 0
+            self.spring.setCondition(self.spring_y)
+            self.spring.start(override=True)
+            return
+
         if not self.collective_init:
             input_data = HapticEffect.device.get_input()
             phys_x, phys_y = input_data.axisXY()
@@ -331,7 +234,7 @@ class Aircraft(AircraftBase):
 
             self.spring_y.cpOffset = self.cpO_y
 
-            self.spring.effect.setCondition(self.spring_y)
+            self.spring.setCondition(self.spring_y)
             # self.damper.damper(coef_y=int(4096 * self.collective_dampening_gain)).start()
             self.spring.start(override=True)
             # print(f"self.cpO_y:{self.cpO_y}, phys_y:{phys_y}")
@@ -350,7 +253,7 @@ class Aircraft(AircraftBase):
         # self.damper.damper(coef_y=int(4096 * self.collective_dampening_gain)).start()
         self.spring_y.negativeCoefficient = self.spring_y.positiveCoefficient = 0
 
-        self.spring.effect.setCondition(self.spring_y)
+        self.spring.setCondition(self.spring_y)
         self.spring.start(override=True)
 
 
@@ -369,7 +272,7 @@ class Aircraft(AircraftBase):
         offs_x = lp_x.update(pedal_pos - x - lp_x.value)
         self.spring_x.cpOffset = utils.clamp_minmax(round(offs_x * 4096), 4096)
         self.spring = effects["pedal_spring"].spring()
-        self.spring.effect.setCondition(self.spring_x)
+        self.spring.setCondition(self.spring_x)
         self.spring.start(override=True)
 
         self.send_commands([f"LoSetCommand(2003, {x - offs_x})"])
@@ -404,8 +307,8 @@ class Aircraft(AircraftBase):
 
         spring = effects["trim_spring"].spring()
         # upload effect parameters to stick
-        spring.effect.setCondition(self.spring_x)
-        spring.effect.setCondition(self.spring_y)
+        spring.setCondition(self.spring_x)
+        spring.setCondition(self.spring_y)
         # ensure effect is started
         spring.start(override=True)
 
@@ -514,8 +417,8 @@ class Helicopter(Aircraft):
             self.spring_y.cpOffset = int(y * 4096)
 
             # tr_spring = effects['TR Damper'].spring(coeff, coeff)
-            self.spring.effect.setCondition(self.spring_x)
-            self.spring.effect.setCondition(self.spring_y)
+            self.spring.setCondition(self.spring_x)
+            self.spring.setCondition(self.spring_y)
             self.spring.start(override=True)
         else:
             self.spring.stop()
