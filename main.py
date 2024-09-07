@@ -419,6 +419,7 @@ def main():
     G.ipc_instance.show_settings_signal.connect(G.main_window.open_system_settings_dialog)
     G.ipc_instance.show_cfg_ovds_signal.connect(G.main_window.settings_layout.configurator_button_clicked)
     G.ipc_instance.erase_cfg_ovds_signal.connect(G.main_window.settings_layout.erase_configurator_overrides)
+    G.ipc_instance.reload_aircraft_signal.connect(G.main_window.force_reload_aircraft)
     G.ipc_instance.start()
 
     HapticEffect.device.buttonPressed.connect(G.main_window.get_active_buttons)
@@ -489,12 +490,13 @@ def main():
             set_vpconf_profile(G.system_settings.get('pathVPConfExit', ''), dev_serial)
         except Exception:
             logging.error("Unable to set VPConfigurator exit profile")
-    try:
-        ## Last we push the gains we read at startup as good measure in case they were changed and never reverted by
-        ## a model change
-        G.gain_override_dialog.set_gains_from_object(G.startup_configurator_gains)
-    except:
-        pass
+    if G.system_settings.get('enableResetGainsExit', False):
+        try:
+            ## Last we push the gains we read at startup as good measure in case they were changed and never reverted by
+            ## a model change
+            G.gain_override_dialog.set_gains_from_object(G.startup_configurator_gains)
+        except:
+            pass
 
 
 def init_logging(log_widget : QPlainTextEdit):
