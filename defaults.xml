@@ -1426,6 +1426,17 @@
 		<validvalues>0,100</validvalues>
 	</defaults>
 	<defaults>
+		<datatype>bool</datatype>
+		<grouping>Axis Control</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>2100.64</order>
+		<name>handson_force_mode</name>
+		<displayname>Force Mode</displayname>
+		<prereq>telemffb_controls_axes</prereq>
+		<MSFS>true</MSFS>
+		<joystick>true</joystick>
+	</defaults>
+	<defaults>
 		<datatype>float</datatype>
 		<grouping>Axis Control</grouping>
 		<parentgroup>basic</parentgroup>
@@ -6688,6 +6699,20 @@
 			<name>hands_on_deadzone</name>
 			<type>SASHelicopter</type>
 			<value>0.1</value>
+			<sim>MSFS</sim>
+			<device>joystick</device>
+		</classdefaults_MSFS>
+		<classdefaults_MSFS>
+			<name>handson_force_mode</name>
+			<type>HPGHelicopter</type>
+			<value>false</value>
+			<sim>MSFS</sim>
+			<device>joystick</device>
+		</classdefaults_MSFS>
+		<classdefaults_MSFS>
+			<name>handson_force_mode</name>
+			<type>SASHelicopter</type>
+			<value>false</value>
 			<sim>MSFS</sim>
 			<device>joystick</device>
 		</classdefaults_MSFS>

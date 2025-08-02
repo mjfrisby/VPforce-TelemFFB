@@ -2064,6 +2064,7 @@ class HPGHelicopter(Helicopter):
     vrs_effect_enable: bool = True
     vrs_effect_intensity = 0
     afcs_followup_trim_rate = 100
+    handson_force_mode = False
 
     def __init__(self, name, **kwargs):
         super().__init__(name, **kwargs)
@@ -2179,6 +2180,17 @@ class HPGHelicopter(Helicopter):
             else:
                 hands_on_dict = self.check_hands_on(self.hands_on_deadzone)
             hands_on_either = hands_on_dict["master_result"]
+
+            if self.handson_force_mode:
+                force_x, force_y = HapticEffect.device.get_input().forceXY()
+
+                curr_hands_on = telem_data.get("hpgHandsOnCyclic", 0)
+
+                thresh = self.hands_on_deadzone/10 if not curr_hands_on else self.hands_off_deadzone/10
+
+                hands_on_either = True if abs(force_x) > thresh or abs(force_y) > thresh else False
+                utils.dbprint('blue', f"hands on:{hands_on_either}")
+
             hands_on_x = hands_on_dict["x_result"]
             dev_x = hands_on_dict["x_deviation"]
             dev_x_raw = hands_on_dict["x_deviation_raw"]
