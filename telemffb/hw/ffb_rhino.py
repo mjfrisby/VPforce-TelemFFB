@@ -1052,7 +1052,8 @@ class HapticEffect(Destroyable):
         # Lazy initialization state
         self._pending_create = None  # function for creating the effect (lazy initialization)
         self._pending_conditions = {} # functions for setting condition (lazy initialization)
-
+        self._ease = None  # {'t0': float, 'dur': float, 'from': float, 'target': float, 'curve': callable}
+        self._ease_completed = False
     def __repr__(self):
         """Return a short representation including the underlying handle."""
         return f"HapticEffect({self._h_effect}) at {hex(id(self))}"
@@ -1130,6 +1131,54 @@ class HapticEffect(Destroyable):
             self._pending_conditions[cond.effectBlockIndex] = lambda: self._h_effect.setCondition(cond)
 
         return self
+
+    @staticmethod
+    def _select_curve(name: str):
+        """
+    Return an easing function f: [0,1] → [0,1] by name.
+
+    Supported names (aliases in parentheses):
+
+      • "linear", "lin"
+          Formula: f(t) = t
+          Feel: Straight line. Constant rate of change. Neutral/transparent.
+          Use when: You want the most predictable output.
+
+      • "ease_in", "quad_in"
+          Formula: f(t) = t²
+          Feel: Starts gentle (low slope), then accelerates. Minimizes initial jerk.
+          Use when: You want a softer onset that "spools up" force.
+
+      • "ease_out", "quad_out"
+          Formula: f(t) = 1 − (1 − t)²
+          Feel: Starts fast, then glides into target. Strong early response, smooth finish.
+          Use when: You want quick establishment of force without a hard stop at the end.
+
+      • "ease_in_out", "quad_in_out"
+          Piecewise: f(t) = 2t²                  for t < 0.5
+                      f(t) = 1 − 2(1 − t)²       for t ≥ 0.5
+          Feel: Gentle start, faster middle, gentle finish. Symmetric.
+          Use when: Both onset and settle should be soft (e.g., precise haptics/UX).
+
+    Notes:
+      • All curves map 0 → 0 and 1 → 1 and stay in [0,1], so clamping isn’t needed.
+      • Subjectively:
+          - ease_in reduces initial "slam" best.
+          - ease_out reduces end "snap" best.
+          - ease_in_out balances both.
+      • You can extend with additional curves (cubic, expo, sine). Keep them monotonic.
+    """
+        name = (name or "linear").lower()
+        if name in ("linear", "lin"):
+            return lambda t: t
+        if name in ("ease_in", "quad_in"):
+            return lambda t: t * t
+        if name in ("ease_out", "quad_out"):
+            return lambda t: 1 - (1 - t) * (1 - t)
+        if name in ("ease_in_out", "quad_in_out"):
+            return (lambda t: 2 * t * t if t < 0.5 else 1 - 2 * (1 - t) * (1 - t))
+        # fallback
+        return lambda t: t
 
     def _conditional_effect(self, effect_type, coef_x = None, coef_y= None, sat_x = None, sat_y = None) -> Self:
         """Common helper for condition-style effects.
@@ -1292,16 +1341,41 @@ class HapticEffect(Destroyable):
 
         return self
 
-    def constant(self, magnitude:float, direction:float, *args, **kwargs):
-        """Create or update a constant (constant force) effect.
+    def constant(
+            self,
+            magnitude: float,
+            direction: float,
+            *args,
+            easing_ms: int = 0,
+            easing_curve: str = "linear",
+            easing_from: float = 0.0,
+            latch: bool = True,
+            rearm_easing: bool = False,
+            **kwargs
+    ):
+        """Create or update a constant (constant force) effect, with optional ease-in.
 
-        Direction may be a numeric angle in degrees or a DirectionModulator
-        class. If the underlying effect is not yet allocated the creation is
-        queued for lazy allocation.
+        If `easing_ms > 0`, the first call latches a ramp from `easing_from`
+        to the requested `magnitude` over `easing_ms` using `easing_curve`.
+        During the ramp:
+          - if `latch=True` (default), subsequent calls ignore new magnitudes
+            until the ramp completes;
+          - if `latch=False`, subsequent calls will retarget from the current
+            eased value to the *new* magnitude and restart timing.
+
+        Once easing completes, updates pass the raw `magnitude` straight through
+        (no re-easing) **until the underlying effect is recreated** or you pass
+        `rearm_easing=True`.
 
         Args:
-            magnitude: Float in range [0.0, 1.0] representing effect strength.
-            direction: Angle in degrees or a DirectionModulator subclass.
+            magnitude: Target magnitude in [-1.0, 1.0].
+            direction: Angle (degrees) or a DirectionModulator subclass.
+            easing_ms: Duration of the initial ramp in milliseconds (0 disables).
+            easing_curve: {'linear','ease_in','ease_out','ease_in_out', ...}.
+            easing_from: Start value for the ramp (default 0.0).
+            latch: Mid-ramp update policy (see above).
+            rearm_easing: If True, allows starting a new easing ramp even if a previous
+                          ramp already finished and the effect still exists.
 
         Returns:
             Self for chaining.
@@ -1312,20 +1386,72 @@ class HapticEffect(Destroyable):
                 self.modulator = direction(*args, **kwargs)
             direction = self.modulator.update()
 
+        mag_req = float(max(-1.0, min(1.0, magnitude)))
+
+        use_easing = (easing_ms > 0) and (rearm_easing or not self._ease_completed)
+
+        if use_easing:
+            now = time.perf_counter()
+            dur = max(0.0, easing_ms / 1000.0)
+            curve = self._select_curve(easing_curve)
+
+            if self._ease is None:
+                # Start a new ramp from easing_from -> mag_req
+                self._ease = {
+                    "t0": now,
+                    "dur": dur,
+                    "from": float(max(-1.0, min(1.0, easing_from))),
+                    "target": mag_req,
+                    "curve": curve,
+                }
+            else:
+                # Update/ramp policy
+                if latch:
+                    pass  # keep original target
+                else:
+                    e = self._ease
+                    # progress so far
+                    t = 0.0 if e["dur"] <= 0 else max(0.0, min(1.0, (now - e["t0"]) / e["dur"]))
+                    current = e["from"] + (e["target"] - e["from"]) * e["curve"](t)
+                    self._ease = {
+                        "t0": now,
+                        "dur": dur,
+                        "from": current,
+                        "target": mag_req,
+                        "curve": curve,
+                    }
+
+            # Evaluate eased magnitude for *this* call
+            e = self._ease
+            t = 0.0 if e["dur"] <= 0 else max(0.0, min(1.0, (now - e["t0"]) / e["dur"]))
+            if t >= 1.0:
+                mag_send = e["target"]
+                self._ease = None  # finished ramp
+                self._ease_completed = True
+            else:
+                mag_send = e["from"] + (e["target"] - e["from"]) * e["curve"](t)
+        else:
+            # No easing (either disabled or already completed)
+            self._ease = None
+            mag_send = mag_req
+
+        # Create or update the underlying hardware effect
         if not self._h_effect:
-            # Store the creation and setup function
+            # We're (re)creating the effect => allow easing again next time
+            self._ease_completed = False
+
             def create_and_setup():
                 self._h_effect = self.device.create_effect(EFFECT_CONSTANT)
                 self.effect_type = EFFECT_CONSTANT
                 if not self._h_effect: 
                     return False
-                self._h_effect.setConstantForce(magnitude, direction, **kwargs)
+                self._h_effect.setConstantForce(mag_send, direction, **kwargs)
                 return True
             
             self._pending_create = create_and_setup
         else:
             # Effect exists, update it directly
-            self._h_effect.setConstantForce(magnitude, direction, **kwargs)
+            self._h_effect.setConstantForce(mag_send, direction, **kwargs)
 
         return self
 
@@ -1386,6 +1512,8 @@ class HapticEffect(Destroyable):
             if millis() - self._stopped_time > destroy_after:
                 self._stopped_time = 0
                 self.destroy()
+        self._ease = None
+        self._ease_completed = False
         return self
 
     def destroy(self):
@@ -1403,6 +1531,8 @@ class HapticEffect(Destroyable):
             logging.info(f"Destroying effect {self._h_effect.effect_id} ({self._h_effect.name}){name}")
             self._h_effect.destroy()
             self._h_effect = None
+            self._ease = None
+            self._ease_completed = False
 
     def __del__(self):
         """Destructor helper to ensure resources are freed."""
