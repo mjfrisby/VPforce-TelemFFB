@@ -131,8 +131,8 @@ class MotionEffectsMixIn(AircraftEffectUtilsBase):
 
         if tot_weight:
             logging.debug(f"Runway Rumble : v1 = {v1}. v2 = {v2}")
-            self.effects["runway0"].constant(v1, utils.RandomDirectionModulator).start()
-            self.effects["runway1"].constant(v2, utils.RandomDirectionModulator).start()
+            self.effects["runway0"].constant(v1, utils.RandomDirectionModulator,  easing_ms=1000, easing_from=0.0).start()
+            self.effects["runway1"].constant(v2, utils.RandomDirectionModulator,  easing_ms=1000, easing_from=0.0).start()
         else:
             self.effects.dispose("runway0", "runway1")
 
