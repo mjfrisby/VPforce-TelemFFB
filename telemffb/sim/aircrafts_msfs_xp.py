@@ -26,6 +26,7 @@ from .msfs_xp.CowanSimHelicopter import CowanSimHelicopter
 from .msfs_xp.FlyInsideHelicopter import FlyInsideHelicopter
 from .msfs_xp.Helicopter import Helicopter
 from .msfs_xp.HPGHelicopter import HPGHelicopter
+from .msfs_xp.DudeHelicopter import DudeHelicopter
 from .msfs_xp.SASHelicopter import SASHelicopter
 
 
