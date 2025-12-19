@@ -17050,14 +17050,14 @@
 	</models>
 	<models>
 		<name>type</name>
-		<model>H225 (AerialApp|Cargo|Passengers|Rescue).*</model>
+		<model>H125 (AerialApp|Cargo|Passengers|Rescue).*</model>
 		<value>Helicopter</value>
 		<sim>MSFS</sim>
 		<device>any</device>
 	</models>
 	<models>
 		<name>type</name>
-		<model>H225 (?!AerialApp|Cargo|Passengers|Rescue).*</model>
+		<model>H125 (?!AerialApp|Cargo|Passengers|Rescue).*</model>
 		<value>CowanSimHelicopter</value>
 		<sim>MSFS</sim>
 		<device>any</device>
