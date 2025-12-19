@@ -110,7 +110,7 @@ class UserModelDialog(QDialog):
                 classes = ["PropellerAircraft", "JetAircraft"]
             case 'MSFS':
                 classes = ['PropellerAircraft', 'TurbopropAircraft', 'JetAircraft', 'GliderAircraft', 'Helicopter',
-                           'HPGHelicopter', 'SASHelicopter', 'FlyInsideHelicopter']
+                           'HPGHelicopter', 'SASHelicopter', 'FlyInsideHelicopter', 'DudeHelicopter']
             case 'XPLANE':
                 classes = ['PropellerAircraft', 'TurbopropAircraft', 'JetAircraft', 'GliderAircraft', 'Helicopter']
 
