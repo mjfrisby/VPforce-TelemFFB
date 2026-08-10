@@ -159,7 +159,7 @@
 		<datatype>n_float</datatype>
 		<name>max_aileron_coeff</name>
 		<displayname>Aileron Max Force</displayname>
-		<prereq>spring_mode.BASIC.CENTER.CNTR_FT</prereq>
+		<prereq>spring_mode.BASIC.CENTER.CNTR_FT.NEXTGEN</prereq>
 		<info>Aileron maximum value for use in dynamic forces calculationst&lt;br&gt;&lt;br&gt;This is a percentage of the spring force value in VPforce Configurator&lt;br&gt;&lt;br&gt;The % shown in the slider is current force applied. 100% occurs near Vne</info>
 		<MSFS>true</MSFS>
 		<XPLANE>true</XPLANE>
@@ -206,7 +206,7 @@
 		<datatype>n_float</datatype>
 		<name>max_elevator_coeff</name>
 		<displayname>Elevator Max Force</displayname>
-		<prereq>spring_mode.BASIC.CENTER.CNTR_FT</prereq>
+		<prereq>spring_mode.BASIC.CENTER.CNTR_FT.NEXTGEN</prereq>
 		<info>Elevator maximum value for use in dynamic forces calculations&lt;br&gt;&lt;br&gt;This is a percentage of the spring force value in VPforce Configurator&lt;br&gt;&lt;br&gt;The % shown in the slider is current force applied. 100% occurs near Vne</info>
 		<MSFS>true</MSFS>
 		<XPLANE>true</XPLANE>
@@ -238,7 +238,7 @@
 		<datatype>n_float</datatype>
 		<name>max_rudder_coeff</name>
 		<displayname>Rudder Max Force</displayname>
-		<prereq>spring_mode.BASIC.CENTER.CNTR_FT</prereq>
+		<prereq>spring_mode.BASIC.CENTER.CNTR_FT.NEXTGEN</prereq>
 		<info>Rudder maximum value for use in dynamic forces calculations&lt;br&gt;&lt;br&gt;This is a percentage of the spring force value in VPforce Configurator&lt;br&gt;&lt;br&gt;The % shown in the slider is current force applied. 100% occurs near Vne</info>
 		<MSFS>true</MSFS>
 		<XPLANE>true</XPLANE>
@@ -270,7 +270,7 @@
 		<datatype>anyfloat</datatype>
 		<name>vne_override</name>
 		<displayname>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;V&lt;span style=" vertical-align:sub;"&gt;NE&lt;/span&gt; Override&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</displayname>
-		<prereq>spring_mode.BASIC.CENTER.CNTR_FT</prereq>
+		<prereq>spring_mode.BASIC.CENTER.CNTR_FT.NEXTGEN</prereq>
 		<info>Override Vne if plane data is incorrect.  Leave blank or delete setting to use sim Vne data &lt;br&gt;&lt;br&gt;Enter Vne Airspeed (IAS) where dynamic forces max out</info>
 		<any>true</any>
 		<MSFS>true</MSFS>
@@ -279,6 +279,111 @@
 		<pedals>true</pedals>
 		<validvalues>m/s,kt,mph,kph</validvalues>
 		<unit>kt</unit>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<datatype>anyfloat</datatype>
+		<grouping>Dynamic Forces</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>471.2</order>
+		<name>nextgen_cruise_speed</name>
+		<displayname>Cruise Anchor Speed</displayname>
+		<prereq>spring_mode.NEXTGEN</prereq>
+		<info>Speed where spring force reaches its ~80% cruise plateau.  Leave blank or delete setting to derive automatically from the aircraft's design cruise speed (MSFS) or Vno (X-Plane)&lt;br&gt;&lt;br&gt;Force continues hardening beyond this speed, reaching 100% at Vne</info>
+		<any>true</any>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<pedals>true</pedals>
+		<validvalues>m/s,kt,mph,kph</validvalues>
+		<unit>kt</unit>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<datatype>n_float</datatype>
+		<grouping>Dynamic Forces</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>472.2</order>
+		<name>nextgen_aileron_response</name>
+		<displayname>Aileron Force Response</displayname>
+		<prereq>spring_mode.NEXTGEN</prereq>
+		<info>How quickly aileron force builds with airspeed below the cruise anchor&lt;br&gt;&lt;br&gt;100% = true aerodynamic response (force rises with airspeed squared), 50% = force rises linearly with airspeed.  Lower values make the low-speed regime feel more alive</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<sliderfactor>1</sliderfactor>
+		<validvalues>50,100</validvalues>
+		<value>0.7</value>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<datatype>n_float</datatype>
+		<grouping>Dynamic Forces</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>472.4</order>
+		<name>nextgen_elevator_response</name>
+		<displayname>Elevator Force Response</displayname>
+		<prereq>spring_mode.NEXTGEN</prereq>
+		<info>How quickly elevator force builds with airspeed below the cruise anchor&lt;br&gt;&lt;br&gt;100% = true aerodynamic response (force rises with airspeed squared), 50% = force rises linearly with airspeed.  Lower values make the low-speed regime feel more alive</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<sliderfactor>1</sliderfactor>
+		<validvalues>50,100</validvalues>
+		<value>0.7</value>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<datatype>n_float</datatype>
+		<grouping>Dynamic Forces</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>472.6</order>
+		<name>nextgen_rudder_response</name>
+		<displayname>Rudder Force Response</displayname>
+		<prereq>spring_mode.NEXTGEN</prereq>
+		<info>How quickly rudder force builds with airspeed below the cruise anchor&lt;br&gt;&lt;br&gt;100% = true aerodynamic response (force rises with airspeed squared), 50% = force rises linearly with airspeed.  Lower values make the low-speed regime feel more alive</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<pedals>true</pedals>
+		<sliderfactor>1</sliderfactor>
+		<validvalues>50,100</validvalues>
+		<value>0.7</value>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<datatype>n_float</datatype>
+		<grouping>Dynamic Forces</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>473.2</order>
+		<name>nextgen_min_force</name>
+		<displayname>Minimum Force</displayname>
+		<prereq>spring_mode.NEXTGEN</prereq>
+		<info>Stiffness floor as a percentage of full spring force&lt;br&gt;&lt;br&gt;Simulates the cable/linkage feel of a real control run so the stick is never completely limp at very low airspeed or on the ground</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<pedals>true</pedals>
+		<sliderfactor>1</sliderfactor>
+		<validvalues>0,20</validvalues>
+		<value>0.06</value>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<datatype>n_float</datatype>
+		<grouping>Dynamic Forces</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>474.2</order>
+		<name>nextgen_damper</name>
+		<displayname>Mechanism Damping</displayname>
+		<prereq>spring_mode.NEXTGEN</prereq>
+		<info>Constant damping applied in Next Gen mode&lt;br&gt;&lt;br&gt;Adds viscous mechanism feel and settles the stick around center at low spring force</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<pedals>true</pedals>
+		<sliderfactor>1</sliderfactor>
+		<validvalues>0,50</validvalues>
+		<value>0.1</value>
 	</defaults>
 	<defaults>
 		<effecttype>spring</effecttype>

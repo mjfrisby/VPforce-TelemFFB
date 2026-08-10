@@ -1656,6 +1656,65 @@ def trim_follow_blend(fam, t, ias_kt, include_r=True):
     return clamp(s, -1.0, 1.0)
 
 
+def nextgen_spring_curve(c_norm, anchor_ratio, gamma, cruise_force=0.8, floor=0.0):
+    """Next Gen Dynamic force curve: map a Vne-normalized spring coefficient
+    ``c_norm`` (q_surface/Q(Vne), 0..1) onto the device range with a soft
+    knee at the cruise anchor.
+
+    Below the anchor ratio ``a = (V_anchor/Vne)^2`` the flying envelope is
+    compressed onto 0..``cruise_force`` with exponent ``gamma`` (1.0 = true
+    aerodynamic V^2 shape, 0.5 = force linear with airspeed); above it the
+    Vno->Vne band hardens linearly in q up to 1.0, preserving a dive-force
+    reserve past cruise. ``floor`` is the minimum stiffness (mechanism/cable
+    feel at low q). Output clamped 0..1.
+    """
+    c = max(0.0, float(c_norm))
+    a = clamp(float(anchor_ratio), 1e-6, 0.999)
+    if c <= a:
+        out = cruise_force * (c / a) ** gamma
+    else:
+        out = cruise_force + (1.0 - cruise_force) * (c - a) / (1.0 - a)
+    return clamp(max(out, floor), 0.0, 1.0)
+
+
+def nextgen_anchor_ratio(telem_data, sim, vne_ms, override_ms=0.0):
+    """Anchor ratio ``(V_anchor/Vne)^2`` for the Next Gen spring knee.
+
+    The anchor is the speed where force reaches the cruise-force plateau:
+    a user override wins; otherwise MSFS design cruise VC (DesignSpeed[0])
+    capped at 0.85 x the red-line (RefMaxIAS, falling back to ``vne_ms``),
+    or X-Plane Vno capped at 0.85 x Vne. Missing/implausible data falls
+    back to 0.75 x Vne, and the anchor never exceeds 0.95 x Vne (the dive
+    band must keep real width). All speeds m/s.
+    """
+    def pos(v):
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            return None
+        return v if v > 0 else None
+
+    vne = pos(vne_ms)
+    if vne is None:
+        return 1.0
+    anchor = pos(override_ms)
+    if anchor is None:
+        if sim == "MSFS":
+            ds = getattr(telem_data, "DesignSpeed", None)
+            vc = pos(ds[0]) if ds is not None and len(ds) >= 1 else None
+            redline = pos(getattr(telem_data, "RefMaxIAS", None)) or vne
+            if vc is not None:
+                anchor = min(vc, 0.85 * redline)
+        elif sim == "XPLANE":
+            vno = pos(getattr(telem_data, "Vno", None))
+            if vno is not None:
+                anchor = min(vno, 0.85 * vne)
+    if anchor is None:
+        anchor = 0.75 * vne
+    anchor = min(anchor, 0.95 * vne)
+    return (anchor / vne) ** 2
+
+
 def non_linear_scaling(x, min_val, max_val, curvature=1.0):
     # Scale the input value to a value between 0 and 1 within the given range
     scaled_value = (x - min_val) / (max_val - min_val)

@@ -23,6 +23,7 @@ class SpringModeEnum(Enum):
     DYNAMIC = auto()
     CUSTOM = auto()
     FORCETRIM = auto()
+    NEXTGEN = auto()
 
 class GEffectModeEnum(Enum):
     DISABLED = auto()
@@ -146,6 +147,7 @@ class SettingsManager(QObject):
     # used for both joystick and pedals
     MSFS_XP_JOYSTICK_SPRING_MODE = {
         SpringModeEnum.BASIC: "Basic Dynamic",
+        SpringModeEnum.NEXTGEN: "Next Gen Dynamic",
         SpringModeEnum.CENTER: "Basic Dynamic with Spring Centering",
         SpringModeEnum.FBW: "FlyByWire (FBW)",
         SpringModeEnum.ADVANCED: "Advanced Dynamic"
@@ -153,6 +155,7 @@ class SettingsManager(QObject):
 
     MSFS_XP_PEDAL_SPRING_MODE = {
         SpringModeEnum.BASIC: "Basic Dynamic",
+        SpringModeEnum.NEXTGEN: "Next Gen Dynamic",
         SpringModeEnum.CENTER: "Basic Dynamic with Spring Centering",
         SpringModeEnum.FBW: "FlyByWire (FBW)",
         SpringModeEnum.ADVANCED: "Advanced Dynamic"

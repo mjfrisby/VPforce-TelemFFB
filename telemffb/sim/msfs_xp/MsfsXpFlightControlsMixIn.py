@@ -38,6 +38,13 @@ class MsfsXpFlightControlsMixIn(MfsfXpSteeringFrictionEffectMixIn, MsfsXpFBWFlig
     elevator_expo: int = 0
     rudder_expo: int = 0
 
+    nextgen_cruise_speed: int = 0  # m/s after unit conversion; 0 = auto from envelope
+    nextgen_aileron_response = 0.7
+    nextgen_elevator_response = 0.7
+    nextgen_rudder_response = 0.7
+    nextgen_min_force = 0.06
+    nextgen_damper = 0.10
+
     trim_following = False
     local_disable_axis_control = False
     lateral_force_gain = 0.2
@@ -49,6 +56,10 @@ class MsfsXpFlightControlsMixIn(MfsfXpSteeringFrictionEffectMixIn, MsfsXpFBWFlig
     ## end of user parameters
 
     g_force_gain = 0.1  # this appears constant, not set anywhere else?
+
+    # Next Gen: fraction of full force reached at the cruise anchor speed;
+    # the remainder is the dive-hardening reserve between cruise and Vne
+    NEXTGEN_CRUISE_FORCE = 0.8
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -294,6 +305,28 @@ class MsfsXpFlightControlsMixIn(MfsfXpSteeringFrictionEffectMixIn, MsfsXpFBWFlig
             self._trim_calibrator = TrimCalibrator(self)
         return self._trim_calibrator
 
+    def _nextgen_anchor_ratio(self, telem_data: BaseTelemetryData, vne):
+        """(V_anchor/Vne)^2 for the Next Gen knee: user cruise-speed override
+        wins, otherwise derived from the aircraft's declared envelope (see
+        utils.nextgen_anchor_ratio)."""
+        override = self.nextgen_cruise_speed if isinstance(self.nextgen_cruise_speed, (int, float)) else 0
+        sim = "XPLANE" if telem_data.src == "XPLANE" else "MSFS"
+        return utils.nextgen_anchor_ratio(telem_data, sim, vne, override_ms=override)
+
+    def _update_nextgen_damper(self, x_only=False):
+        """Constant light damper for mechanism feel in Next Gen mode; destroyed
+        whenever any other spring mode is active."""
+        if self.spring_mode_is(SpringModeEnum.NEXTGEN) and self.nextgen_damper > 0:
+            d = int(4096 * clamp(self.nextgen_damper, 0.0, 0.5))
+            if self.anything_has_changed('nextgen_damper_coeff', d) or not self.effects['nextgen_damper'].started:
+                self.effects["nextgen_damper"].damper(d, 0 if x_only else d).start()
+        else:
+            self._stop_nextgen_damper()
+
+    def _stop_nextgen_damper(self):
+        if self.effects['nextgen_damper'].started:
+            self.effects["nextgen_damper"].destroy()
+
     def _calculate_airspeeds(self, telem_data: BaseTelemetryData, incidence_vec):
         """Calculate and store airspeed values in telemetry data.
 
@@ -316,6 +349,11 @@ class MsfsXpFlightControlsMixIn(MfsfXpSteeringFrictionEffectMixIn, MsfsXpFBWFlig
         # is physically correct only when _airspeed is TAS. Revisit before changing;
         # this affects all propwash-enhanced elevator and rudder dynamic pressures.
         _airspeed = telem_data.IAS
+        if self.spring_mode_is(SpringModeEnum.NEXTGEN):
+            # Next Gen only: the actuator-disc formula wants true airspeed
+            tas = getattr(telem_data, "TAS", 0) or 0
+            if tas > 0:
+                _airspeed = tas
         telem_data.TAS = _airspeed
         telem_data.TAS_kt = _airspeed * ms2kt
         telem_data.IAS_kt = telem_data.IAS * ms2kt
@@ -581,6 +619,25 @@ class MsfsXpFlightControlsMixIn(MfsfXpSteeringFrictionEffectMixIn, MsfsXpFBWFlig
                 spd_x_rud = scale * rudder_coeff
                 x_gains_rud = utils.get_gain_from_speed(self.adv_spr_gains, spd_x_rud)
                 rudder_coeff = x_gains_rud.get("x")
+        elif self.spring_mode_is(SpringModeEnum.NEXTGEN):
+            # Soft-knee remap: the flying envelope (up to the cruise anchor) is
+            # compressed onto 0..NEXTGEN_CRUISE_FORCE of the device range, the
+            # cruise->Vne band hardens linearly in q to 1.0 (dive reserve), and
+            # a stiffness floor keeps the mechanism from ever going limp.
+            anchor_ratio = self._nextgen_anchor_ratio(telem_data, telem_data.Vne_kt / ms2kt)
+            floor = clamp(self.nextgen_min_force, 0.0, 0.2)
+            elevator_coeff = utils.nextgen_spring_curve(
+                elevator_coeff, anchor_ratio,
+                clamp(self.nextgen_elevator_response, 0.5, 1.0),
+                self.NEXTGEN_CRUISE_FORCE, floor)
+            aileron_coeff = utils.nextgen_spring_curve(
+                aileron_coeff, anchor_ratio,
+                clamp(self.nextgen_aileron_response, 0.5, 1.0),
+                self.NEXTGEN_CRUISE_FORCE, floor)
+            rudder_coeff = utils.nextgen_spring_curve(
+                rudder_coeff, anchor_ratio,
+                clamp(self.nextgen_rudder_response, 0.5, 1.0),
+                self.NEXTGEN_CRUISE_FORCE, floor)
         else:
             elevator_coeff = utils.expocurve(elevator_coeff, self.elevator_expo)
             aileron_coeff = utils.expocurve(aileron_coeff, self.aileron_expo)
@@ -662,7 +719,12 @@ class MsfsXpFlightControlsMixIn(MfsfXpSteeringFrictionEffectMixIn, MsfsXpFBWFlig
         # forces at low taxi speeds. If a low-speed fade is desired, a hard deadzone
         # below ~30 kt (rather than a continuous linear ramp) would be more physically correct.
         IAS = telem_data.IAS
-        speed_factor = utils.scale_clamp(IAS, (0, vne), (0.0, 1.0))
+        if self.spring_mode_is(SpringModeEnum.NEXTGEN):
+            # rud_force is already ∝ q/Qvne; the extra linear ramp is what
+            # makes the net response cubic, so Next Gen skips it
+            speed_factor = 1.0
+        else:
+            speed_factor = utils.scale_clamp(IAS, (0, vne), (0.0, 1.0))
         rud_force = rud_force * speed_factor
 
         return rud_force
@@ -794,7 +856,13 @@ class MsfsXpFlightControlsMixIn(MfsfXpSteeringFrictionEffectMixIn, MsfsXpFBWFlig
             and not max(telem_data.WeightOnWheels)
         ):
             tot = telem_data.ElevDefl / telem_data.ElevDeflPct
-            speed_factor = utils.scale_clamp(IAS, (0, vne), (0.0, 1.0))
+            if self.spring_mode_is(SpringModeEnum.NEXTGEN):
+                # the spring coefficient already carries the speed physics in
+                # this mode; the extra linear fade muted the stall-proximity
+                # cue exactly when AoA is largest
+                speed_factor = 1.0
+            else:
+                speed_factor = utils.scale_clamp(IAS, (0, vne), (0.0, 1.0))
             y_offs = _aoa / tot
             y_offs = y_offs + force_trim_y_offset + (phys_stick_y_offs / 4096)
             y_offs = clamp(y_offs, -1, 1)
@@ -886,6 +954,8 @@ class MsfsXpFlightControlsMixIn(MfsfXpSteeringFrictionEffectMixIn, MsfsXpFBWFlig
         self._spring_handle.setCondition(self.spring_x)
 
         self._apply_joystick_constant_forces(telem_data, _elevator_droop_term, _G_term)
+
+        self._update_nextgen_damper()
 
         self._spring_handle.start()
 
@@ -1012,7 +1082,7 @@ class MsfsXpFlightControlsMixIn(MfsfXpSteeringFrictionEffectMixIn, MsfsXpFBWFlig
 
         self.const_force.constant(rud_force, 270).start()
 
-
+        self._update_nextgen_damper(x_only=True)
 
         self._spring_handle.start()
     
@@ -1099,17 +1169,20 @@ class MsfsXpFlightControlsMixIn(MfsfXpSteeringFrictionEffectMixIn, MsfsXpFBWFlig
         # Early exit conditions for FBW or helicopter mode
         if self.spring_mode_is(SpringModeEnum.FBW) or telem_data.ACisFBW:
             logging.debug("FBW Setting enabled, running fbw_flight_controls")
+            self._stop_nextgen_damper()
             self.update_fbw_flight_controls(telem_data)
             return
 
         if telem_data.AircraftClass == "Helicopter":
             logging.debug("Aircraft is Helicopter, aborting update_flight_controls")
+            self._stop_nextgen_damper()
             return
 
         if self.telemffb_controls_axes and self.ap_following and ap_active and self.use_fbw_for_ap_follow:
             logging.debug("FBW Setting enabled, running fbw_flight_controls")
             self.update_fbw_flight_controls(telem_data, ap=True)
             self.effects["dynamic_spring"].stop()
+            self._stop_nextgen_damper()
             return
         else:
             self.effects["fbw_spring"].stop()
