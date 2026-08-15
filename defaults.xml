@@ -1002,6 +1002,197 @@
 	</defaults>
 	<defaults>
 		<effecttype>spring</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1150</order>
+		<value>0.35</value>
+		<datatype>float</datatype>
+		<name>nb_cyclic_gradient</name>
+		<displayname>Cyclic Force Gradient</displayname>
+		<prereq>spring_mode.NONBOOSTED</prereq>
+		<info>Base cyclic spring stiffness at flight rotor RPM&lt;br&gt;&lt;br&gt;Scales with rotor speed squared - the stick firms up as the rotor spools up and stays workable in the hover</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<validvalues>0,100</validvalues>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1151</order>
+		<value>0.3</value>
+		<datatype>float</datatype>
+		<name>nb_bias_gain_pitch</name>
+		<displayname>Pitch Bias Force</displayname>
+		<prereq>spring_mode.NONBOOSTED</prereq>
+		<info>Strength of the sustained fore/aft stick force fed back from the rotor (flapback)&lt;br&gt;&lt;br&gt;This is the force you hold against in cruise - it grows with airspeed and is not relieved unless the aircraft has trim</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<validvalues>0,100</validvalues>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1152</order>
+		<value>0.3</value>
+		<datatype>float</datatype>
+		<name>nb_bias_gain_roll</name>
+		<displayname>Roll Bias Force</displayname>
+		<prereq>spring_mode.NONBOOSTED</prereq>
+		<info>Strength of the sustained lateral stick force fed back from the rotor&lt;br&gt;&lt;br&gt;Direction depends on rotor rotation - set Rotor Direction below if the force pushes the wrong way</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<validvalues>0,100</validvalues>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1153</order>
+		<value>Counter-Clockwise</value>
+		<datatype>list</datatype>
+		<name>nb_rotor_direction</name>
+		<displayname>Rotor Direction</displayname>
+		<prereq>spring_mode.NONBOOSTED</prereq>
+		<info>Main rotor rotation direction viewed from above&lt;br&gt;&lt;br&gt;Counter-Clockwise = US/most western helicopters.  Sets the direction of the lateral bias forces on cyclic and pedals</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<pedals>true</pedals>
+		<validvalues>Counter-Clockwise,Clockwise</validvalues>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1154</order>
+		<value>false</value>
+		<datatype>bool</datatype>
+		<name>nb_motorized_trim</name>
+		<displayname>Motorized Trim</displayname>
+		<prereq>spring_mode.NONBOOSTED</prereq>
+		<info>Simulates electric/bungee cyclic trim (Enstrom style)&lt;br&gt;&lt;br&gt;The zero-force point slews slowly toward the trimmed position, bleeding off held force over a second or two - unlike a magnetic-brake force trim which recaptures instantly</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1155</order>
+		<value>0.25</value>
+		<datatype>float</datatype>
+		<name>nb_trim_rate</name>
+		<displayname>Trim Rate</displayname>
+		<prereq>nb_motorized_trim</prereq>
+		<info>How quickly the motorized trim slews the zero-force point, as a fraction of full stick throw per second</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<validvalues>0,100</validvalues>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1156</order>
+		<value>0.05</value>
+		<datatype>float</datatype>
+		<name>nb_friction</name>
+		<displayname>Cyclic Friction</displayname>
+		<prereq>spring_mode.NONBOOSTED</prereq>
+		<info>Constant control friction - the period-correct way to manage held forces in a helicopter with no trim system&lt;br&gt;&lt;br&gt;Enough friction will hold the stick in place when released, like a real friction lock</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<validvalues>0,100</validvalues>
+	</defaults>
+	<defaults>
+		<effecttype>periodic</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1157</order>
+		<value>true</value>
+		<datatype>bool</datatype>
+		<name>nb_vibration_enable</name>
+		<displayname>Rotor Vibration</displayname>
+		<prereq>spring_mode.NONBOOSTED</prereq>
+		<info>N-per-rev vibration through the cyclic, scaled by airspeed and G loading&lt;br&gt;&lt;br&gt;Uses the Rotor Blade Count setting for frequency.  Distinct from Engine/Rotor Rumble, which is constant with RPM</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+	</defaults>
+	<defaults>
+		<effecttype>periodic</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1157.1</order>
+		<value>0.15</value>
+		<datatype>float</datatype>
+		<name>nb_vibration_intensity</name>
+		<displayname>Vibration Intensity</displayname>
+		<prereq>nb_vibration_enable</prereq>
+		<info>Strength of the N-per-rev rotor vibration</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<sliderfactor>0.5</sliderfactor>
+		<validvalues>0,100</validvalues>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1158</order>
+		<value>0.3</value>
+		<datatype>float</datatype>
+		<name>nb_pedal_gradient</name>
+		<displayname>Pedal Force Gradient</displayname>
+		<prereq>spring_mode.NONBOOSTED</prereq>
+		<info>Base pedal stiffness at flight rotor RPM - scales with rotor speed squared</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<pedals>true</pedals>
+		<validvalues>0,100</validvalues>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1159</order>
+		<value>0.25</value>
+		<datatype>float</datatype>
+		<name>nb_pedal_bias_gain</name>
+		<displayname>Pedal Bias Force</displayname>
+		<prereq>spring_mode.NONBOOSTED</prereq>
+		<info>Sustained pedal force fed back from tail rotor blade pitch - more anti-torque input, more force in your feet</info>
+		<MSFS>true</MSFS>
+		<XPLANE>true</XPLANE>
+		<pedals>true</pedals>
+		<validvalues>0,100</validvalues>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
+		<grouping>Non-Boosted</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1160</order>
+		<value>400</value>
+		<datatype>int</datatype>
+		<name>nb_rated_rotor_rpm</name>
+		<displayname>Rated Rotor RPM</displayname>
+		<prereq>spring_mode.NONBOOSTED</prereq>
+		<info>Nominal 100% main rotor RPM for this aircraft&lt;br&gt;&lt;br&gt;X-Plane only - used to normalize rotor speed for the force gradient (MSFS reports rotor RPM percent directly)</info>
+		<XPLANE>true</XPLANE>
+		<joystick>true</joystick>
+		<pedals>true</pedals>
+	</defaults>
+	<defaults>
+		<effecttype>spring</effecttype>
 		<grouping>Basic</grouping>
 		<parentgroup>basic</parentgroup>
 		<order>1200</order>

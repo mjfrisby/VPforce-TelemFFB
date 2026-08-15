@@ -366,6 +366,10 @@ class SimConnectManager(threading.Thread):
         SimVarArray("PropThrust", "PROP THRUST", "kilograms", min=1, max=4, scale=10),#scaled to newtons
         SimVarArray("PropRPM", "PROP RPM", "RPM", min=1, max=4),
         SimVar("RotorRPM", "ROTOR RPM:1", "RPM"),
+        SimVar("RotorRPMPct", "ROTOR RPM PCT:1", "Percent Over 100"),
+        SimVar("DiskPitch", "DISK PITCH ANGLE:1", "degrees"),
+        SimVar("DiskBank", "DISK BANK ANGLE:1", "degrees"),
+        SimVar("DiskConing", "DISK CONING PCT:1", "Percent Over 100"),
         SimVar("DynPressure", "DYNAMIC PRESSURE", "pascal"),
         SimVar("APMaster", "AUTOPILOT MASTER", "Bool"),
         SimVar("RudderDefl", "RUDDER DEFLECTION", "degrees"),

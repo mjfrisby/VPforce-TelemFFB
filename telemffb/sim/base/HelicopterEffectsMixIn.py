@@ -31,6 +31,10 @@ class HelicopterEffectsMixIn(AdvancedSpringMixIn):
     overspeed_shake_intensity: float = 0.2
     overspeed_shake_frequency: float = 0.0
 
+    # Non-Boosted Dynamic vibration layer
+    nb_vibration_enable: bool = True
+    nb_vibration_intensity: float = 0.15
+
     # Blade slap (blade-vortex interaction)
     blade_slap_enable: bool = False
     blade_slap_intensity: float = 0.15
@@ -443,6 +447,47 @@ class HelicopterEffectsMixIn(AdvancedSpringMixIn):
         self.effects["blade_slap_y"].periodic(freq, mag, 0, effect_type=EFFECT_SAWTOOTHDOWN).start()
         self.effects["blade_slap_x"].periodic(freq, mag, 90, effect_type=EFFECT_SAWTOOTHDOWN).start()
 
+    def ac_update_nonboosted_vibration(self, telem_data: BaseTelemetryData):
+        """N-per-rev vibration through the cyclic in Non-Boosted Dynamic mode.
+
+        Frequency = rotor rev rate x blade count; magnitude scales with
+        forward dynamic pressure and G loading (aero load through the pitch
+        links), unlike the constant-with-RPM engine/rotor rumble.  X-Plane
+        adds the sim-computed blade-slap ratio on top.
+
+        Telemetry:
+            Read: RotorRPM (or PropRPM[0] on XPLANE) - rev rate for frequency
+                  IAS  - float (m/s); forward-q magnitude scaling
+                  G    - float; load-factor magnitude scaling
+                  BladeSlap - float (0..1, XPLANE plugin); descent blade slap
+        """
+        if not (self.spring_mode_is(SpringModeEnum.NONBOOSTED)
+                and self.nb_vibration_enable and self.is_joystick()):
+            self.effects.dispose("nb_nrev_x", "nb_nrev_y")
+            return
+
+        if self._sim_is_xplane():
+            rotor = telem_data.PropRPM or 0
+            if isinstance(rotor, list):
+                rotor = rotor[0]
+        else:
+            rotor = telem_data.RotorRPM or 0
+            if isinstance(rotor, list):
+                rotor = max(rotor)
+        freq = (rotor / 60.0) * (self.rotor_blade_count or 2)
+        if freq < 0.5:
+            self.effects.dispose("nb_nrev_x", "nb_nrev_y")
+            return
+
+        q_frac = self._nb_forward_q_frac(telem_data)
+        g_load = abs((telem_data.G or 1.0) - 1.0)
+        slap = utils.clamp(telem_data.BladeSlap or 0.0, 0.0, 1.0)
+        mag = self.nb_vibration_intensity * (0.3 + 0.5 * q_frac + 0.2 * utils.clamp(g_load, 0.0, 1.0) + slap)
+        mag = utils.clamp(mag, 0.0, 1.0)
+
+        self.effects["nb_nrev_y"].periodic(freq, mag, 0).start()
+        self.effects["nb_nrev_x"].periodic(freq, mag, 90).start()
+
     def on_telemetry(self, telem_data: BaseTelemetryData):
         super().on_telemetry(telem_data)
         if self.is_helicopter():
@@ -450,4 +495,5 @@ class HelicopterEffectsMixIn(AdvancedSpringMixIn):
             self.ac_update_heli_engine_rumble(telem_data, blade_ct=self.rotor_blade_count)
             self.ac_update_vrs_effect(telem_data)
             self.ac_update_blade_slap(telem_data, blade_ct=self.rotor_blade_count)
-    
+            self.ac_update_nonboosted_vibration(telem_data)
+
