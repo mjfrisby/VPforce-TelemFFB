@@ -1047,6 +1047,45 @@ class BaseTelemetryData:
     Default when absent: True (use .get("ForceTrimSW", True)).  
     """
 
+    RotorRPMPct: Optional[float]
+    """Main rotor RPM as a fraction of rated (1.0 = 100%).
+    MSFS: ROTOR RPM PCT:1 SimVar — Percent Over 100.
+    XP: not available — normalize RotorRPM by nb_rated_rotor_rpm instead.
+    """
+
+    DiskPitch: Optional[float]
+    """Main rotor disc pitch (fore/aft tilt) — the longitudinal flapping state.
+    MSFS: DISK PITCH ANGLE:1 SimVar — degrees.
+    XP: rotor_cyclic_elevator_tilt_deg (plugin, engine 0) — degrees.
+    Diagnostic only: largely tracks the cyclic command with per-aircraft scale
+    and sign, so it must NOT drive force without calibrated extraction
+    (field-confirmed runaway).  Kept for tuning visibility / future work.
+    """
+
+    DiskBank: Optional[float]
+    """Main rotor disc bank (lateral tilt) — the lateral flapping state.
+    MSFS: DISK BANK ANGLE:1 SimVar — degrees.
+    XP: rotor_cyclic_aileron_tilt_deg (plugin, engine 0) — degrees.
+    """
+
+    DiskConing: Optional[float]
+    """Main rotor coning, fraction of max (thrust-state indicator).
+    MSFS: DISK CONING PCT:1 SimVar — Percent Over 100.
+    Subscribed for tuning visibility; not used by v1 force math.
+    """
+
+    BladeAlpha: Optional[float]
+    """Dynamic-pressure-weighted mean rotor blade angle of attack.
+    XP: rotor_blade_alpha_deg (plugin, engine 0) — degrees.
+    Retreating-blade-stall proximity signal; MSFS: not available.
+    """
+
+    BladeSlap: Optional[float]
+    """Rotor blade slap intensity ratio (0..1), computed by X-Plane.
+    XP: rotor_blade_slap_rat (plugin, engine 0).
+    Scales the non-boosted vibration layer; MSFS: not available.
+    """
+
     SEMAx: Optional[float]
     """SAS/SEMA (Stability Enhancement/Mechanical Augmentation) authority.  
     Set by helicopter MixIns — axis-specific authority values.  

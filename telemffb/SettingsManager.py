@@ -23,6 +23,7 @@ class SpringModeEnum(Enum):
     DYNAMIC = auto()
     CUSTOM = auto()
     FORCETRIM = auto()
+    NONBOOSTED = auto()
 
 class GEffectModeEnum(Enum):
     DISABLED = auto()
@@ -169,11 +170,13 @@ class SettingsManager(QObject):
     MSFS_XP_HELI_PEDAL_SPRING_MODE = {
         SpringModeEnum.NOSPRING: "No Spring",
         SpringModeEnum.FORCETRIM: "Hardware Force Trim",
+        SpringModeEnum.NONBOOSTED: "Non-Boosted Dynamic",
     }
 
     MSFS_XP_HELI_JOYSTICK_SPRING_MODE = {
         SpringModeEnum.NOSPRING: "No Spring",
         SpringModeEnum.FORCETRIM: "Hardware Force Trim",
+        SpringModeEnum.NONBOOSTED: "Non-Boosted Dynamic",
     }
 
     MSFS_XP_HELI_COLLECTIVE_SPRING_MODE = {

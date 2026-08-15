@@ -2,9 +2,12 @@ import telemffb.utils as utils
 from telemffb.SettingsManager import SpringModeEnum
 from telemffb.hw.ffb_rhino import HapticEffect
 from telemffb.sim.msfs_xp.MsfsXpFlightControlsMixIn import MsfsXpFlightControlsMixIn
+from telemffb.util.Vector import Vector2D
+from telemffb.util.conversions import deg
 from telemffb.utils import clamp
 from typing import override
 import logging
+import time
 from telemffb.sim.BaseTelemetryData import BaseTelemetryData
 
 
@@ -21,7 +24,30 @@ class MsfsXpHeliControlsMixIn(MsfsXpFlightControlsMixIn):
     trim_release_spring_gain = 0
     force_trim_send_reset = True
 
+    # Non-Boosted Dynamic mode (unboosted mechanical cyclic)
+    nb_cyclic_gradient = 0.35
+    nb_bias_gain_pitch = 0.3
+    nb_bias_gain_roll = 0.3
+    nb_rotor_direction = "Counter-Clockwise"
+    nb_motorized_trim = False
+    nb_trim_rate = 0.25          # anchor slew rate, full throw fraction per second
+    nb_friction = 0.05
+    nb_rated_rotor_rpm = 400     # XP only; MSFS uses ROTOR RPM PCT directly
+    nb_pedal_gradient = 0.3
+    nb_pedal_bias_gain = 0.25
+
     # end of user parameters
+
+    # Non-Boosted internal constants
+    NB_VREF_MS = 66.9        # 130 kt: forward-q normalization for gradient boost and bias law
+    NB_GRAD_Q_BOOST = 0.3    # forward-speed increment on the rotor-q gradient
+    # Sign conventions pending in-sim verification of the DISK ANGLE reference frame;
+    # flip here (not in the gains) if the bias pushes the wrong way.
+    NB_PITCH_SIGN = 1.0
+    NB_ROLL_SIGN = 1.0
+    # Pedal bias loads AGAINST the applied pedal (tail-rotor pitch reaction);
+    # a same-direction sign would be positive feedback and run to the stop.
+    NB_PEDAL_SIGN = -1.0
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -236,6 +262,138 @@ class MsfsXpHeliControlsMixIn(MsfsXpFlightControlsMixIn):
 
         return False
 
+    def _nb_rotor_frac(self, telem_data: BaseTelemetryData) -> float:
+        """Main rotor speed as a fraction of rated (1.0 = 100% RRPM).
+
+        MSFS reports it directly; X-Plane normalizes RotorRPM by the
+        nb_rated_rotor_rpm setting.
+        """
+        if self._sim_is_xplane():
+            rated = max(float(self.nb_rated_rotor_rpm or 0), 1.0)
+            frac = (telem_data.RotorRPM or 0) / rated
+        else:
+            frac = telem_data.RotorRPMPct or 0
+        return clamp(frac, 0.0, 1.2)
+
+    def _nb_forward_q_frac(self, telem_data: BaseTelemetryData) -> float:
+        """Forward-flight dynamic pressure fraction, 1.0 at NB_VREF_MS."""
+        ias = telem_data.IAS or 0
+        return clamp((ias / self.NB_VREF_MS) ** 2, 0.0, 1.0)
+
+    def _nb_bias_vector(self, telem_data: BaseTelemetryData, rrpm2, q_frac):
+        """(bias_pitch, bias_roll) in [-1, 1]: the sustained cyclic force fed
+        back from the rotor (flapback/dissymmetry), as a forward-q law scaled
+        by rotor q, lateral sign from the rotor-direction setting.
+
+        Deliberately a function of AIRSPEED ONLY — nothing the stick can
+        influence.  The sim disc-attitude angles (DiskPitch/DiskBank) largely
+        track the cyclic command with per-aircraft scale and sign we cannot
+        know a priori; any bias derived from them couples stick position back
+        into force and can turn the spring into a runaway (field-confirmed,
+        both raw and command-subtracted forms).  Disc telemetry remains
+        subscribed for a future per-aircraft calibrated extraction.
+        """
+        lat_sign = 1.0 if self.nb_rotor_direction == "Counter-Clockwise" else -1.0
+        bias_pitch = self.nb_bias_gain_pitch * q_frac * rrpm2
+        bias_roll = self.nb_bias_gain_roll * q_frac * rrpm2 * lat_sign
+        bias_pitch = clamp(bias_pitch * self.NB_PITCH_SIGN, -1.0, 1.0)
+        bias_roll = clamp(bias_roll * self.NB_ROLL_SIGN, -1.0, 1.0)
+        return bias_pitch, bias_roll
+
+    def _nb_frame_dt(self) -> float:
+        """Per-frame wall-clock delta for the non-boosted slew/filter, capped
+        at 100ms so pauses don't produce jumps."""
+        now = time.perf_counter()
+        dt = clamp(now - getattr(self, "_nb_last_t", now), 0.0, 0.1)
+        self._nb_last_t = now
+        return dt
+
+    def _nb_slew_anchor(self, target_x, target_y, dt):
+        """Motorized-trim anchor slew: move cpO toward the target at
+        nb_trim_rate (full-throw fraction/s) — bleeds held force off over
+        seconds, unlike the magnetic-brake instant recapture."""
+        step = self.nb_trim_rate * 4096 * dt
+        for attr, target in (("cpO_x", target_x), ("cpO_y", target_y)):
+            cur = getattr(self, attr)
+            diff = target - cur
+            if abs(diff) <= step:
+                setattr(self, attr, target)
+            else:
+                setattr(self, attr, cur + step * (1 if diff > 0 else -1))
+
+    def _update_cyclic_nonboosted(self, telem_data: BaseTelemetryData, input_data, x, y) -> bool:
+        """Non-Boosted Dynamic cyclic: rotor-q spring gradient + disc-attitude
+        bias force + friction.  Returns True if the caller should return early
+        (spring still initializing)."""
+        if self._initialize_cyclic_if_needed(telem_data):
+            return True
+
+        rrpm_frac = self._nb_rotor_frac(telem_data)
+        rrpm2 = rrpm_frac ** 2
+        q_frac = self._nb_forward_q_frac(telem_data)
+        dt = self._nb_frame_dt()
+
+        # Spring gradient: rotor rotational q dominates (stiff at hover once
+        # the rotor is at speed); forward flight adds a modest increment.
+        grad = clamp(self.nb_cyclic_gradient * rrpm2 * (1.0 + self.NB_GRAD_Q_BOOST * q_frac), 0.0, 1.0)
+
+        # Trim anchor (zero-force point) lives in cpO_x/cpO_y.
+        if self.nb_motorized_trim:
+            if input_data is not None and self.force_trim_button > 0 and \
+                    input_data.isButtonPressed(self.force_trim_button):
+                # no sim-side trim model: beep toward the held stick position
+                self._nb_slew_anchor(round(x * 4096), round(y * 4096), dt)
+            elif self._sim_is_msfs():
+                # sim models cyclic trim: anchor tracks it, rate-limited
+                trim_x = clamp((telem_data.CyclicTrimX or 0) * self.joystick_x_axis_scale, -1, 1)
+                trim_y = clamp((telem_data.CyclicTrimY or 0) * self.joystick_y_axis_scale, -1, 1)
+                self._nb_slew_anchor(round(trim_x * 4096), round(trim_y * 4096), dt)
+
+        self.spring_x.set_coefficient(grad)
+        self.spring_y.set_coefficient(grad)
+        self.spring_x.set_offset(int(self.cpO_x))
+        self.spring_y.set_offset(int(self.cpO_y))
+        self._spring_handle.setCondition(self.spring_x)
+        self._spring_handle.setCondition(self.spring_y)
+        if not self._spring_handle.started:
+            self._spring_handle.start()
+
+        # Bias force: low-pass filtered (~150ms) so noisy near-zero components
+        # don't snap the constant-force direction 180 degrees (felt as thumps).
+        bias_pitch, bias_roll = self._nb_bias_vector(telem_data, rrpm2, q_frac)
+        if getattr(self, "_nb_bias_f", None) is None:
+            self._nb_bias_f = [bias_pitch, bias_roll]
+        else:
+            alpha = clamp(dt / 0.15, 0.0, 1.0)
+            self._nb_bias_f[0] += alpha * (bias_pitch - self._nb_bias_f[0])
+            self._nb_bias_f[1] += alpha * (bias_roll - self._nb_bias_f[1])
+        bias_pitch, bias_roll = self._nb_bias_f
+        cf = Vector2D(bias_pitch, bias_roll)
+        if cf.magnitude() > 1.0:
+            cf = cf.normalize()
+        mag, theta = cf.to_polar()
+        self.effects["nb_cyclic_bias"].constant(mag, theta * deg).start()
+
+        # Friction: the period-correct force-management tool (no trim system).
+        fric = clamp(self.nb_friction, 0.0, 1.0)
+        if fric > 0:
+            d = int(4096 * fric)
+            if self.anything_has_changed('nb_friction_coeff', d) or not self.effects['nb_friction'].started:
+                self.effects["nb_friction"].friction(d, d).start()
+        elif self.effects['nb_friction'].started:
+            self.effects["nb_friction"].destroy()
+
+        telem_data.StickXY = [x, y]
+        telem_data.StickXY_offset = [self.cpO_x / 4096, self.cpO_y / 4096]
+        telem_data._nb_grad = grad
+        telem_data._nb_bias = [bias_pitch, bias_roll]
+        return False
+
+    def _stop_nonboosted_cyclic_effects(self):
+        for name in ("nb_cyclic_bias", "nb_friction"):
+            if self.effects[name].started:
+                self.effects[name].destroy()
+
     def _send_cyclic_axis_output(self, telem_data: BaseTelemetryData, force_trim_active):
         """Read physical stick, apply trim offsets and scaling, send axis values to sim."""
         if not self._axis_control_enabled():
@@ -328,6 +486,16 @@ class MsfsXpHeliControlsMixIn(MsfsXpFlightControlsMixIn):
                 return
 
             input_data = HapticEffect.device.get_input()
+
+            if self.spring_mode_is(SpringModeEnum.NONBOOSTED):
+                # Non-boosted mechanical cyclic manages its own spring, bias
+                # and friction; the force-trim housekeeping below is not for it.
+                if self._update_cyclic_nonboosted(telem_data, input_data, x, y):
+                    return
+                self._send_cyclic_axis_output(telem_data, force_trim_active)
+                return
+            self._stop_nonboosted_cyclic_effects()
+
             if self._update_cyclic_force_trim(telem_data, input_data, x, y, force_trim_active):
                 return
 

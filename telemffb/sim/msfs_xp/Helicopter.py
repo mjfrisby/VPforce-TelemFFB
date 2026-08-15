@@ -227,6 +227,25 @@ class Helicopter(Aircraft, MsfsXpHeliControlsMixIn):
         return False
 
     def _update_pedal_spring_mode(self, telem_data: BaseTelemetryData, force_trim_active: bool):
+        if self.spring_mode_is(SpringModeEnum.NONBOOSTED):
+            # Non-boosted mechanical pedals: rotor-q gradient + a sustained
+            # bias force fed back from tail-rotor blade pitch (anti-torque).
+            rrpm2 = self._nb_rotor_frac(telem_data) ** 2
+            grad = clamp(self.nb_pedal_gradient * rrpm2, 0.0, 1.0)
+            self.spring_x.set_coefficient(grad)
+            self.spring_x.set_offset(int(self.cpO_x))
+            self._spring_handle.setCondition(self.spring_x)
+
+            tail_pitch = telem_data.TailRotorPedalPos or 0
+            bias = clamp(self.nb_pedal_bias_gain * tail_pitch * rrpm2 * self.NB_PEDAL_SIGN, -1.0, 1.0)
+            self.effects["nb_pedal_bias"].constant(bias, 270).start()
+
+            telem_data._nb_pedal_grad = grad
+            telem_data._nb_pedal_bias = bias
+            return
+        if self.effects['nb_pedal_bias'].started:
+            self.effects['nb_pedal_bias'].destroy()
+
         if self.spring_mode_is(SpringModeEnum.FORCETRIM):
             if not self.ac_update_pedal_force_trim(telem_data, ft_active=force_trim_active):
                 self.spring_x.set_coefficient(self.pedal_spring_gain, True)
