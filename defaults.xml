@@ -20346,7 +20346,14 @@
 		<value>FFBApiHelicopter</value>
 		<sim>MSFS</sim>
 		<device>any</device>
-		<notes>This aircraft uses the FFBApiHelicopter class, which drives the cyclic spring from the standardized L:FFB_* variables the aircraft publishes. It needs version 1.2.0 or later of the AS365 Dauphin / HH65 Dolphin package. That version publishes the API for the cyclic only: the collective and pedals get no trim reference from the aircraft, so the collective gets a damping force set by FFB API Collective Spring Gain, and the pedals have no spring until FFB API Pedal Spring Gain is raised. The axes are sent through the aircraft's own input events rather than the sim's axis events, which is what applies its hydraulic-loss limits on cyclic, collective and pedal authority; leave the custom axis settings as they ship. If you load a livery whose title does not automatically match this profile, you must CLONE this profile for the new livery rather than create a new one. The input events are specific to each aircraft and only a clone carries them. To opt out, set the class to Helicopter.</notes>
+		<notes>Class: FFBApiHelicopter. Requires the AS365 Dauphin / HH65 Dolphin package 1.2.0 or later. The cyclic and pedal springs follow the aircraft's L:FFB_* trim variables. The aircraft has no collective trim; the collective has a damping force set by Collective Spring Gain. Pedals past the fly-through deadzone are released; once still, the spring holds them at their position. Axes are sent through the aircraft's input events, which apply its hydraulic-loss limits on cyclic, collective and pedal authority; do not change the custom axis settings. For a livery whose title does not match this profile, CLONE this profile; a new profile does not carry the input events. To opt out, set the class to Helicopter.</notes>
+	</models>
+	<models>
+		<name>ffb_api_pedal_spring_gain</name>
+		<model>AS365 N2.*</model>
+		<value>0.5</value>
+		<sim>MSFS</sim>
+		<device>pedals</device>
 	</models>
 	<models>
 		<name>enable_custom_x_axis</name>
@@ -20410,7 +20417,14 @@
 		<value>FFBApiHelicopter</value>
 		<sim>MSFS</sim>
 		<device>any</device>
-		<notes>This aircraft uses the FFBApiHelicopter class, which drives the cyclic spring from the standardized L:FFB_* variables the aircraft publishes. It needs version 1.2.0 or later of the AS365 Dauphin / HH65 Dolphin package. That version publishes the API for the cyclic only: the collective and pedals get no trim reference from the aircraft, so the collective gets a damping force set by FFB API Collective Spring Gain, and the pedals have no spring until FFB API Pedal Spring Gain is raised. The axes are sent through the aircraft's own input events rather than the sim's axis events, which is what applies its hydraulic-loss limits on cyclic, collective and pedal authority; leave the custom axis settings as they ship. If you load a livery whose title does not automatically match this profile, you must CLONE this profile for the new livery rather than create a new one. The input events are specific to each aircraft and only a clone carries them. To opt out, set the class to Helicopter.</notes>
+		<notes>Class: FFBApiHelicopter. Requires the AS365 Dauphin / HH65 Dolphin package 1.2.0 or later. The cyclic and pedal springs follow the aircraft's L:FFB_* trim variables. The aircraft has no collective trim; the collective has a damping force set by Collective Spring Gain. Pedals past the fly-through deadzone are released; once still, the spring holds them at their position. Axes are sent through the aircraft's input events, which apply its hydraulic-loss limits on cyclic, collective and pedal authority; do not change the custom axis settings. For a livery whose title does not match this profile, CLONE this profile; a new profile does not carry the input events. To opt out, set the class to Helicopter.</notes>
+	</models>
+	<models>
+		<name>ffb_api_pedal_spring_gain</name>
+		<model>AS365 F/N.*</model>
+		<value>0.5</value>
+		<sim>MSFS</sim>
+		<device>pedals</device>
 	</models>
 	<models>
 		<name>enable_custom_x_axis</name>
@@ -24380,7 +24394,14 @@
 		<value>FFBApiHelicopter</value>
 		<sim>MSFS</sim>
 		<device>any</device>
-		<notes>This aircraft uses the FFBApiHelicopter class, which drives the cyclic spring from the standardized L:FFB_* variables the aircraft publishes. It needs version 1.2.0 or later of the AS365 Dauphin / HH65 Dolphin package. That version publishes the API for the cyclic only: the collective and pedals get no trim reference from the aircraft, so the collective gets a damping force set by FFB API Collective Spring Gain, and the pedals have no spring until FFB API Pedal Spring Gain is raised. The axes are sent through the aircraft's own input events rather than the sim's axis events, which is what applies its hydraulic-loss limits on cyclic, collective and pedal authority; leave the custom axis settings as they ship. If you load a livery whose title does not automatically match this profile, you must CLONE this profile for the new livery rather than create a new one. The input events are specific to each aircraft and only a clone carries them. To opt out, set the class to Helicopter.</notes>
+		<notes>Class: FFBApiHelicopter. Requires the AS365 Dauphin / HH65 Dolphin package 1.2.0 or later. The cyclic, collective and pedal springs follow the aircraft's L:FFB_* trim variables. C-SYNC held or collective trim off: the collective is released. Pedals past the fly-through deadzone are released; once still, the spring holds them at their position. Axes are sent through the aircraft's input events, which apply its hydraulic-loss limits on cyclic, collective and pedal authority; do not change the custom axis settings. For a livery whose title does not match this profile, CLONE this profile; a new profile does not carry the input events. To opt out, set the class to Helicopter.</notes>
+	</models>
+	<models>
+		<name>ffb_api_pedal_spring_gain</name>
+		<model>HH65A Dolphin.*</model>
+		<value>0.5</value>
+		<sim>MSFS</sim>
+		<device>pedals</device>
 	</models>
 	<models>
 		<name>enable_custom_x_axis</name>
@@ -24444,7 +24465,14 @@
 		<value>FFBApiHelicopter</value>
 		<sim>MSFS</sim>
 		<device>any</device>
-		<notes>This aircraft uses the FFBApiHelicopter class, which drives the cyclic spring from the standardized L:FFB_* variables the aircraft publishes. It needs version 1.2.0 or later of the AS365 Dauphin / HH65 Dolphin package. That version publishes the API for the cyclic only: the collective and pedals get no trim reference from the aircraft, so the collective gets a damping force set by FFB API Collective Spring Gain, and the pedals have no spring until FFB API Pedal Spring Gain is raised. The axes are sent through the aircraft's own input events rather than the sim's axis events, which is what applies its hydraulic-loss limits on cyclic, collective and pedal authority; leave the custom axis settings as they ship. If you load a livery whose title does not automatically match this profile, you must CLONE this profile for the new livery rather than create a new one. The input events are specific to each aircraft and only a clone carries them. To opt out, set the class to Helicopter.</notes>
+		<notes>Class: FFBApiHelicopter. Requires the AS365 Dauphin / HH65 Dolphin package 1.2.0 or later. The cyclic, collective and pedal springs follow the aircraft's L:FFB_* trim variables. C-SYNC held or collective trim off: the collective is released. Pedals past the fly-through deadzone are released; once still, the spring holds them at their position. Axes are sent through the aircraft's input events, which apply its hydraulic-loss limits on cyclic, collective and pedal authority; do not change the custom axis settings. For a livery whose title does not match this profile, CLONE this profile; a new profile does not carry the input events. To opt out, set the class to Helicopter.</notes>
+	</models>
+	<models>
+		<name>ffb_api_pedal_spring_gain</name>
+		<model>HH65B Dolphin.*</model>
+		<value>0.5</value>
+		<sim>MSFS</sim>
+		<device>pedals</device>
 	</models>
 	<models>
 		<name>enable_custom_x_axis</name>
