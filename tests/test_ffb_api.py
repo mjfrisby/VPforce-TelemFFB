@@ -1209,7 +1209,7 @@ class TestFFBApiSettingsScope:
 
     def test_rows_exist(self, root):
         """Guard the guard: a rename must not turn these tests into no-ops."""
-        assert len(self._rows(root)) == 11
+        assert len(self._rows(root)) == 12
 
     def test_orders_do_not_trigger_special_layout(self, root):
         """`order` is not just a sort key - its suffix selects a layout mode.
