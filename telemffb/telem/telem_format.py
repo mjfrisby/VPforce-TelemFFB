@@ -18,6 +18,10 @@ from telemffb.hw.ffb_rhino import (EFFECT_CONSTANT, EFFECT_CUSTOM,
                                    EFFECT_SPRING, EFFECT_SPRING_ADJUSTER,
                                    EFFECT_SQUARE, EFFECT_TRIANGLE)
 
+#: Settings an aircraft marks active for the frame, besides those of started
+#: effects.  See AircraftEffectUtilsBase.mark_settings_active().
+ACTIVE_SETTINGS_KEY = '_active_settings'
+
 #: The keys a frame lists first, in this order; the rest follow alphabetically.
 LEADING_KEYS = ('T', 'frameTimes', 'maxFrameTime', 'avgFrameTime', 'perf', 'FFBType',
                 'N', 'src', 'msfs_vers', 'AircraftClass', 'SimconnectCategory')

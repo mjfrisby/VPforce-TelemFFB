@@ -48,6 +48,7 @@ from telemffb import xmlutils
 from telemffb.xml.merge import gate_failures, gate_references
 
 PREVIEW_BUTTON_SIZE = 20          # matches the -/+ step buttons
+LIVE_TEXT_HANDLE_WIDTH = 40       # fits a live readout such as "12.3%" on the handle
 PREVIEW_ACTIVE_HANDLE = ACTIVE_GREEN  # the green the live loop paints active effects
 
 
@@ -140,6 +141,7 @@ class SettingsLayout(QGridLayout):
         # walking findChildren() every ~50ms. See bind()/repaint_active_settings().
         self._active_setting_sliders = []          # NoWheelSlider, excluding live-key number sliders
         self.live_key_sliders = []                 # [(NoWheelNumberSlider, live_telemetry_key), ...]
+        self.live_text_sliders = []                # [(NoWheelNumberSlider, live_telemetry_key), ...]
         self._gate_refs = set()                    # settings named by a render/enable gate
         result = None
         if G.settings_mgr.current_sim != 'nothing':
@@ -824,6 +826,7 @@ class SettingsLayout(QGridLayout):
         # dangling widget. build_rows() (if it runs next) repopulates them.
         self._active_setting_sliders = []
         self.live_key_sliders = []
+        self.live_text_sliders = []
         layout = self.layout()
         if layout is not None:
             while layout.count():
@@ -855,10 +858,15 @@ class SettingsLayout(QGridLayout):
         those from both loops, the second (live-telemetry) one always
         winning, so folding them into one bucket each reproduces the same
         final paint without doing it twice.
+
+        ``N_SLIDER_LIVE_TEXT_KEYS`` sliders go in both ``live_text_sliders`` and
+        ``_active_setting_sliders``: only their text is live.
         """
         live_keys = getattr(self.mainwindow, 'N_SLIDER_LIVE_KEYS', {})
+        live_text_keys = getattr(self.mainwindow, 'N_SLIDER_LIVE_TEXT_KEYS', {})
         active_setting_sliders = []
         live_key_sliders = []
+        live_text_sliders = []
         # Walk the layout tree, not findChildren(): clear_layout() only
         # deleteLater()s the old rows, so until the event loop runs they are
         # still children of the parent widget and would be cached alongside
@@ -873,9 +881,14 @@ class SettingsLayout(QGridLayout):
                 if live_key is not None:
                     live_key_sliders.append((slider, live_key))
                     continue
+                # the setting name follows sld_, or dfsld_ for pct_float
+                text_key = live_text_keys.get(slider.objectName().split('sld_', 1)[-1])
+                if text_key is not None:
+                    live_text_sliders.append((slider, text_key))
             active_setting_sliders.append(slider)
         self._active_setting_sliders = active_setting_sliders
         self.live_key_sliders = live_key_sliders
+        self.live_text_sliders = live_text_sliders
         # Fresh widgets default to the idle color; paint them from whatever
         # AppState currently holds instead of waiting for it to next change.
         self.repaint_active_settings()
@@ -1292,7 +1305,12 @@ class SettingsLayout(QGridLayout):
         d_slider.setOrientation(QtCore.Qt.Orientation.Horizontal)
         d_slider.setObjectName(f"dsld_{item['name']}")
 
-        df_slider = NoWheelSlider()
+        # a live value needs the number slider's wider handle
+        if item['name'] in getattr(self.mainwindow, 'N_SLIDER_LIVE_TEXT_KEYS', {}):
+            df_slider = NoWheelNumberSlider()
+            df_slider.setHandleWidth(LIVE_TEXT_HANDLE_WIDTH)
+        else:
+            df_slider = NoWheelSlider()
         df_slider.setOrientation(QtCore.Qt.Orientation.Horizontal)
         df_slider.setObjectName(f"dfsld_{item['name']}")
 

@@ -5,6 +5,7 @@ from telemffb.hw.ffb_rhino import HapticEffect
 from telemffb.hw.button_refs import parse_button_ref
 from telemffb.sim.BaseTelemetryData import BaseTelemetryData
 from telemffb.state.sim_status import ERROR_SEPARATOR
+from telemffb.telem.telem_format import ACTIVE_SETTINGS_KEY
 
 import logging
 import random
@@ -260,6 +261,17 @@ class AircraftEffectUtilsBase(object):
             # Rebuilt from the frame's full list rather than appended to:
             # _ipc_telem belongs to the aircraft and outlives the frame.
             self._ipc_telem['error'] = self.telem_data.error
+
+    def mark_settings_active(self, *names):
+        """Change the color of these settings' sliders to active for this frame,
+        as for a started effect's setting.
+
+        Args:
+            names (str): Setting names, as in defaults.xml
+        """
+        if names:
+            current = self.telem_data[ACTIVE_SETTINGS_KEY] or []
+            self.telem_data[ACTIVE_SETTINGS_KEY] = current + [n for n in names if n not in current]
 
     def is_joystick(self):
         """Check if the current FFB device is a joystick.

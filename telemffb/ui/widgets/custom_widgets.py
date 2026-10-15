@@ -1314,6 +1314,13 @@ class NoWheelSlider(QSlider):
         self._apply_handle_geometry_style()
         self.update()
 
+    def setHandleWidth(self, width):
+        if self.handle_width == width:
+            return
+        self.handle_width = width
+        self._apply_handle_geometry_style()
+        self.update()
+
     def enterEvent(self, event):
         self.setFocus()
         super().enterEvent(event)  # Call the default handler to ensure normal behavior
@@ -1336,6 +1343,13 @@ class NoWheelNumberSlider(NoWheelSlider):
         self.handle_color = color
         self.value_text = text
         self.update()  # Ensure the slider is repainted to show the new text
+
+    def setHandleText(self, text):
+        """Change only the text on the handle, leaving its color to setActive()."""
+        if self.value_text == text:
+            return
+        self.value_text = text
+        self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
