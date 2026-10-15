@@ -197,6 +197,10 @@ class FFBApiHelicopter(Helicopter):
     #: force telemetry (VPforce hardware); otherwise flagged and ignored.
     ffb_api_fly_through_force_mode: bool = False
 
+    #: Pedals: button binding (bare number or qualified id) for a feet-on switch.
+    #: When bound, the button state is pedal fly-through.
+    ffb_api_feet_on_button = 0
+
     #: Sign conversion from the spec's convention to device axes (spec 3.5:
     #: positive = pitch nose-up / roll right / collective up / right pedal).
     #: Collective defaults inverted because TelemFFB's device y is +1 at full down.
@@ -558,12 +562,17 @@ class FFBApiHelicopter(Helicopter):
             telem_data[f"_ffb_fly_through_{axis.lower()}"] = int(active)
 
     def _ffb_api_detect_fly_through(self, axis, phys_norm, center_norm) -> bool:
-        """Fly-through for ``axis`` with hysteresis, from device force in force mode
-        or deviation from the trim reference otherwise.
+        """Fly-through for ``axis``: the feet-on switch for the pedals when bound,
+        otherwise with hysteresis from device force in force mode or deviation from
+        the trim reference.
 
-        The rig always publishes the best signal its hardware can produce; the spec
-        deliberately does not ask which method was used (spec 3.7).
+        TelemFFB publishes the best signal its hardware can produce; the spec does
+        not ask which method was used (spec 3.7).
         """
+        if axis == "PEDALS" and self.ffb_api_feet_on_button:
+            active = self.check_button_press(self.ffb_api_feet_on_button)
+            self._ffb_api_fly_through_state[axis] = active
+            return active
         was_active = self._ffb_api_fly_through_state.get(axis, False)
         deadzone = (
             self.ffb_api_fly_through_release_deadzone
