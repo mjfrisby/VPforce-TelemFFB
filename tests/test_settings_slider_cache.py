@@ -102,3 +102,30 @@ def test_paint_leaves_preview_held_rows_green(qapp):
     held.setProperty(_PREVIEW_HELD, True)
     SettingsLayout._paint_active_settings(layout, ())
     assert held.handle_color == ACTIVE_GREEN
+
+
+def test_a_live_readout_slider_is_also_painted_as_active(qapp):
+    """A live-text slider (dfsld_, pct_float) is in both caches."""
+    from telemffb.ui.theme.tokens import ACTIVE_GREEN
+    host, layout = _stand_in_layout()
+    layout.mainwindow.N_SLIDER_LIVE_TEXT_KEYS = {'fly_through_deadzone': '_measure'}
+    w = _add_rows(layout)
+    readout = NoWheelNumberSlider()
+    readout.setObjectName('dfsld_fly_through_deadzone')
+    sl_layout = QHBoxLayout()
+    sl_layout.addWidget(readout)
+    layout.addLayout(sl_layout, 3, 1)
+    SettingsLayout._rebuild_slider_caches(layout)
+    assert layout.live_text_sliders == [(readout, '_measure')]
+    assert readout in layout._active_setting_sliders
+    assert layout.live_key_sliders == [(w['sld_max_elevator_coeff'], '_pct_max_e')]
+    readout.setHandleText("4.3%")
+    SettingsLayout._paint_active_settings(layout, ('fly_through_deadzone',))
+    assert (readout.handle_color, readout.value_text) == (ACTIVE_GREEN, "4.3%")
+
+
+def test_live_readout_text(qapp):
+    from telemffb.MainWindow import MainWindow
+    assert MainWindow.live_readout(0.043) == "4.3%"
+    assert MainWindow.live_readout(0) == "0.0%"
+    assert MainWindow.live_readout(None) == ""

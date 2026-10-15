@@ -80,7 +80,7 @@ from telemffb.preview.controller import EffectPreviewController
 # from telemffb.ui.dialogs.UserModelDialog import UserModelDialog
 from telemffb.ui.dialogs.NewAircraftWizard import NewAircraftWizard
 from telemffb.telem.SimTelemListener import SimTelemListener
-from telemffb.telem.telem_format import ordered_telemetry
+from telemffb.telem.telem_format import ACTIVE_SETTINGS_KEY, ordered_telemetry
 from telemffb.ui.dialogs.SystemSettingsDialog import SystemSettingsDialog
 from telemffb.ui.dialogs.TeleplotSetupDialog import TeleplotSetupDialog
 from telemffb.ui.dialogs.ProfileManager import ProfileManagerDialog, NewProfileDialog
@@ -139,6 +139,13 @@ class MainWindow(QMainWindow):
         'tap_effect_damper_gain': '_pct_tap_damper',
         'tap_effect_inertia_gain': '_pct_tap_inertia',
         'tap_effect_friction_gain': '_pct_tap_friction',
+    }
+    #: Number sliders whose handle shows a live value: setting name -> telemetry
+    #: key (a fraction, shown as a percentage).  The handle color still follows
+    #: the active settings.
+    N_SLIDER_LIVE_TEXT_KEYS = {
+        'ffb_api_fly_through_deadzone': '_ffb_fly_through_measure',
+        'ffb_api_fly_through_release_deadzone': '_ffb_fly_through_measure',
     }
     def __init__(self):
         super().__init__()
@@ -2105,6 +2112,9 @@ class MainWindow(QMainWindow):
         # No frames means no running effects; don't leave the last live
         # frame's slider highlighting up (on_update_telemetry won't clear it).
         G.app_state.set_active_settings(())
+        # clear the live values
+        for my_slider, _ in self.settings_layout.live_text_sliders:
+            my_slider.setHandleText('')
         self.sim_status.on_timeout(G.telem_manager.getTelemValue('src'))
 
     def on_sim_exited(self, src: str):
@@ -2157,9 +2167,17 @@ class MainWindow(QMainWindow):
         chosen = G.master_instance and G.launched_instances
         self.monitor_panel.set_scope_device(G.current_device_config_scope if chosen else None, sending)
 
-    def _own_active_effects(self):
+    @staticmethod
+    def live_readout(value) -> str:
+        """Format a live fraction as a percentage, or '' when there is none."""
+        try:
+            return f"{float(value) * 100:.1f}%"
+        except (TypeError, ValueError):
+            return ''
+
+    def _own_active_effects(self, frame=None):
         """This instance's started effects as the monitors list them, and the
-        settings driving them."""
+        settings driving them, plus any that ``frame`` marks active."""
         active_effects = []
         active_settings = []
         effect : HapticEffect
@@ -2193,6 +2211,10 @@ class MainWindow(QMainWindow):
                 })
                 if settingname not in active_settings and settingname != '':
                     active_settings.append(settingname)
+        # see AircraftEffectUtilsBase.mark_settings_active()
+        for settingname in (frame or {}).get(ACTIVE_SETTINGS_KEY) or ():
+            if settingname not in active_settings:
+                active_settings.append(settingname)
         return active_effects, active_settings
 
     #: Minimum time between two refreshes of the window from telemetry.
@@ -2233,7 +2255,7 @@ class MainWindow(QMainWindow):
                 active_effects = G.ipc_instance._ipc_telem_effects.get(f'{dev}_active_effects', [])
                 active_settings = G.ipc_instance._ipc_telem_effects.get(f'{dev}_active_settings', [])
             else:
-                active_effects, active_settings = self._own_active_effects()
+                active_effects, active_settings = self._own_active_effects(data)
                 own_effects = active_effects
 
             # the in-sim panel's monitor shows this instance's device whatever
@@ -2282,6 +2304,8 @@ class MainWindow(QMainWindow):
                     tip = levels_note if live_key.startswith('_pct_tap_') else ''
                     if my_slider.toolTip() != tip:
                         my_slider.setToolTip(tip)
+                for my_slider, live_key in self.settings_layout.live_text_sliders:
+                    my_slider.setHandleText(self.live_readout(scoped.get(live_key)))
 
             # Error onset/hold/clear - see SimStatusTracker.on_frame.
             self.sim_status.on_frame(data)
