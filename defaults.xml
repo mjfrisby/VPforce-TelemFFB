@@ -1421,7 +1421,7 @@
 		<parentgroup>basic</parentgroup>
 		<order>1231</order>
 		<name>ffb_api_cyclic_spring_gain</name>
-		<displayname>FFB API Cyclic Spring Gain</displayname>
+		<displayname>Cyclic Spring Gain</displayname>
 		<prereq>basic_group</prereq>
 		<info>Spring gain for the cyclic while the FFB API is driving it.&lt;br&gt;&lt;br&gt;The spring centre follows the trim actuator position the aircraft publishes; this sets how firmly it holds.</info>
 		<MSFS>true</MSFS>
@@ -1448,7 +1448,7 @@
 		<parentgroup>basic</parentgroup>
 		<order>1233</order>
 		<name>ffb_api_collective_spring_gain</name>
-		<displayname>FFB API Collective Spring Gain</displayname>
+		<displayname>Collective Spring Gain</displayname>
 		<prereq>basic_group</prereq>
 		<info>Spring gain for the collective while the FFB API is driving it.&lt;br&gt;&lt;br&gt;Also used to hold the lever when the aircraft advertises no collective trim system.</info>
 		<MSFS>true</MSFS>
@@ -1461,7 +1461,7 @@
 		<parentgroup>basic</parentgroup>
 		<order>1234</order>
 		<name>ffb_api_pedal_spring_gain</name>
-		<displayname>FFB API Pedal Spring Gain</displayname>
+		<displayname>Pedal Spring Gain</displayname>
 		<prereq>basic_group</prereq>
 		<info>Spring gain for the pedals while the FFB API is driving them.&lt;br&gt;&lt;br&gt;Defaults to 0 (no pedal spring), matching the stock MSFS helicopter setting - raise it to follow published pedal trim.</info>
 		<MSFS>true</MSFS>
@@ -1491,7 +1491,7 @@
 		<parentgroup>basic</parentgroup>
 		<order>1236</order>
 		<name>ffb_api_tr_spring_gain</name>
-		<displayname>FFB API Trim Release Damper</displayname>
+		<displayname>Trim Release Damper</displayname>
 		<prereq>basic_group</prereq>
 		<info>Spring gain while the aircraft reports its trim actuator unclutched (L:FFB_&lt;CONTROL&gt;_TR_ON).&lt;br&gt;&lt;br&gt;Acts as a dampening force while the control is free to reposition.</info>
 		<MSFS>true</MSFS>
@@ -1506,9 +1506,9 @@
 		<parentgroup>basic</parentgroup>
 		<order>1237</order>
 		<name>ffb_api_fly_through_deadzone</name>
-		<displayname>FFB API Fly Through Deadzone</displayname>
+		<displayname>Fly Through Deadzone</displayname>
 		<prereq>basic_group</prereq>
-		<info>Deviation from the trim position at which fly-through is reported to the aircraft. With FFB API Fly Through Force Mode on: device force.&lt;br&gt;&lt;br&gt;Green while the measured value is above it.</info>
+		<info>Deviation from the trim position at which fly-through is reported to the aircraft. With Fly Through Force Mode on: device force.&lt;br&gt;&lt;br&gt;Green while the measured value is above it.</info>
 		<MSFS>true</MSFS>
 		<joystick>true</joystick>
 		<collective>true</collective>
@@ -1522,9 +1522,9 @@
 		<parentgroup>basic</parentgroup>
 		<order>1238</order>
 		<name>ffb_api_fly_through_release_deadzone</name>
-		<displayname>FFB API Fly Through Release Deadzone</displayname>
+		<displayname>Fly Through Release Deadzone</displayname>
 		<prereq>basic_group</prereq>
-		<info>Deviation below which fly-through clears. With FFB API Fly Through Force Mode on: device force. Set it below FFB API Fly Through Deadzone.&lt;br&gt;&lt;br&gt;Green while the measured value is below it. Flickering at rest: the value is too low.</info>
+		<info>Deviation below which fly-through clears. With Fly Through Force Mode on: device force. Set it below Fly Through Deadzone.&lt;br&gt;&lt;br&gt;Green while the measured value is below it. Flickering at rest: the value is too low.</info>
 		<MSFS>true</MSFS>
 		<joystick>true</joystick>
 		<collective>true</collective>
@@ -1536,22 +1536,36 @@
 		<datatype>bool</datatype>
 		<grouping>FFB API</grouping>
 		<parentgroup>basic</parentgroup>
-		<order>1246</order>
+		<order>1239.3</order>
 		<name>ffb_api_individual_fly_through</name>
-		<displayname>FFB API Per-Axis Fly Through</displayname>
-		<prereq>basic_group</prereq>
+		<displayname>Per-Axis Fly Through</displayname>
+		<prereq>ffb_api_options_group</prereq>
 		<info>Detect fly-through separately for cyclic pitch and roll.&lt;br&gt;&lt;br&gt;Disable on hardware that cannot cleanly separate the two axes - detection is then per control and mirrored onto both axis variables.</info>
 		<MSFS>true</MSFS>
 		<joystick>true</joystick>
 	</defaults>
 	<defaults>
-		<datatype>bool</datatype>
+		<datatype>group</datatype>
 		<grouping>FFB API</grouping>
 		<parentgroup>basic</parentgroup>
 		<order>1239</order>
-		<name>ffb_api_fly_through_force_mode</name>
-		<displayname>FFB API Fly Through Force Mode</displayname>
+		<name>ffb_api_options_group</name>
+		<displayname>FFB API Options</displayname>
 		<prereq>basic_group</prereq>
+		<info>Fly-through detection and axis sign options.</info>
+		<MSFS>true</MSFS>
+		<joystick>true</joystick>
+		<collective>true</collective>
+		<pedals>true</pedals>
+	</defaults>
+	<defaults>
+		<datatype>bool</datatype>
+		<grouping>FFB API</grouping>
+		<parentgroup>basic</parentgroup>
+		<order>1239.2</order>
+		<name>ffb_api_fly_through_force_mode</name>
+		<displayname>Fly Through Force Mode</displayname>
+		<prereq>ffb_api_options_group</prereq>
 		<info>Compare the fly-through deadzones with device force instead of deviation from the trim position.&lt;br&gt;&lt;br&gt;Requires force telemetry (VPforce hardware only). Other devices: deviation is used and an error is shown.</info>
 		<MSFS>true</MSFS>
 		<joystick>true</joystick>
@@ -1590,10 +1604,10 @@
 		<datatype>bool</datatype>
 		<grouping>FFB API</grouping>
 		<parentgroup>basic</parentgroup>
-		<order>1247</order>
+		<order>1239.4</order>
 		<name>ffb_api_invert_cyclic_pitch</name>
-		<displayname>FFB API Invert Cyclic Pitch Trim</displayname>
-		<prereq>basic_group</prereq>
+		<displayname>Invert Cyclic Pitch Trim</displayname>
+		<prereq>ffb_api_options_group</prereq>
 		<info>Invert the sign of the published cyclic pitch trim position.&lt;br&gt;&lt;br&gt;The API convention is positive = nose-up; use this if the spring centre moves the wrong way.</info>
 		<MSFS>true</MSFS>
 		<joystick>true</joystick>
@@ -1602,10 +1616,10 @@
 		<datatype>bool</datatype>
 		<grouping>FFB API</grouping>
 		<parentgroup>basic</parentgroup>
-		<order>1248</order>
+		<order>1239.5</order>
 		<name>ffb_api_invert_cyclic_roll</name>
-		<displayname>FFB API Invert Cyclic Roll Trim</displayname>
-		<prereq>basic_group</prereq>
+		<displayname>Invert Cyclic Roll Trim</displayname>
+		<prereq>ffb_api_options_group</prereq>
 		<info>Invert the sign of the published cyclic roll trim position.&lt;br&gt;&lt;br&gt;The API convention is positive = roll right.</info>
 		<MSFS>true</MSFS>
 		<joystick>true</joystick>
@@ -1614,10 +1628,10 @@
 		<datatype>bool</datatype>
 		<grouping>FFB API</grouping>
 		<parentgroup>basic</parentgroup>
-		<order>1249</order>
+		<order>1239.6</order>
 		<name>ffb_api_invert_collective</name>
-		<displayname>FFB API Invert Collective Trim</displayname>
-		<prereq>basic_group</prereq>
+		<displayname>Invert Collective Trim</displayname>
+		<prereq>ffb_api_options_group</prereq>
 		<info>Invert the sign of the published collective trim position.&lt;br&gt;&lt;br&gt;Enabled by default: the API convention is positive = collective up, while TelemFFB's device axis reads +1 at full down.</info>
 		<MSFS>true</MSFS>
 		<collective>true</collective>
@@ -1626,10 +1640,10 @@
 		<datatype>bool</datatype>
 		<grouping>FFB API</grouping>
 		<parentgroup>basic</parentgroup>
-		<order>1250</order>
+		<order>1239.7</order>
 		<name>ffb_api_invert_pedals</name>
-		<displayname>FFB API Invert Pedal Trim</displayname>
-		<prereq>basic_group</prereq>
+		<displayname>Invert Pedal Trim</displayname>
+		<prereq>ffb_api_options_group</prereq>
 		<info>Invert the sign of the published pedal trim position.&lt;br&gt;&lt;br&gt;The API convention is positive = right pedal (yaw right).</info>
 		<MSFS>true</MSFS>
 		<pedals>true</pedals>
@@ -9814,6 +9828,13 @@
 			<value>true</value>
 			<sim>MSFS</sim>
 			<device>joystick</device>
+		</classdefaults_MSFS>
+		<classdefaults_MSFS>
+			<name>ffb_api_options_group</name>
+			<type>FFBApiHelicopter</type>
+			<value>true</value>
+			<sim>MSFS</sim>
+			<device>any</device>
 		</classdefaults_MSFS>
 		<classdefaults_MSFS>
 			<name>ffb_api_fly_through_force_mode</name>

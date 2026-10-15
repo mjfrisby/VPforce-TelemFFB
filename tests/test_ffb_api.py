@@ -1209,27 +1209,30 @@ class TestFFBApiSettingsScope:
 
     def test_rows_exist(self, root):
         """Guard the guard: a rename must not turn these tests into no-ops."""
-        assert len(self._rows(root)) == 12
+        assert len(self._rows(root)) == 13
 
     def test_orders_do_not_trigger_special_layout(self, root):
         """`order` is not just a sort key - its suffix selects a layout mode.
 
         An order ending in `1` *with a decimal point* means "bump-up": the row is drawn
-        on its prereq parent's row, replacing the parent's entry widget, which renders
-        as a mangled slider with the parent's label bleeding through it.  Any other
-        decimal suffix makes the row a collapsible child instead of a normal row, and
-        `.0` marks a group container.  These are all plain rows, so their orders must
-        be plain integers.  (`ffb_api_cyclic_spring_gain` shipped as 1235.1 and bumped.)
+        on its prereq parent's row, replacing the parent's entry widget.  `.0` marks a
+        locked-open group container.  Any other decimal suffix makes the row a
+        collapsible child.  Rows under basic_group: integer orders.  Rows under
+        ffb_api_options_group: a decimal suffix that is neither of the two.
+        (`ffb_api_cyclic_spring_gain` shipped as 1235.1 and bumped.)
         """
         offenders = []
         for d in self._rows(root):
             order = (d.findtext("order") or "").strip()
-            if "." in order:
+            if d.findtext("prereq") == "ffb_api_options_group":
+                ok = "." in order and not order.endswith("1") and ".0" not in order
+            else:
+                ok = "." not in order
+            if not ok:
                 offenders.append((d.findtext("name"), order))
         assert offenders == [], (
-            f"{offenders} carry a decimal order suffix, which selects a special layout "
-            f"mode rather than a normal row - see 'The order Field' in "
-            f"docs/defaults_xml_reference.md."
+            f"{offenders} have an order suffix that selects the wrong layout mode - "
+            f"see 'The order Field' in docs/defaults_xml_reference.md."
         )
 
     def test_orders_are_unique(self, root):

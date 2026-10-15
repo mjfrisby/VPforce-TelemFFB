@@ -585,7 +585,7 @@ class FFBApiHelicopter(Helicopter):
             return False
         caps = getattr(HapticEffect.device, 'caps', None)
         if caps is not None and not caps.has_force_telemetry:
-            self.flag_error('FFB API Fly Through Force Mode is not supported on this device.\n'
+            self.flag_error('Fly Through Force Mode is not supported on this device.\n'
                             'It requires the force telemetry which is only available from VPforce '
                             'hardware; the fly-through deadzones measure deviation instead.')
             return False
