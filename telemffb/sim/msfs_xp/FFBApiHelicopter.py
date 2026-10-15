@@ -52,6 +52,7 @@ import time
 from typing import override
 
 from telemffb.SettingsManager import SpringModeEnum
+from telemffb.hw.ffb_rhino import HapticEffect
 from telemffb.sim.BaseTelemetryData import BaseTelemetryData
 from telemffb.sim.msfs_xp.Helicopter import Helicopter
 from telemffb.utils import clamp
@@ -123,6 +124,14 @@ FFB_API_TR_FIELD = {
     FFB_API_PEDALS: "ffbTrOnPedals",
 }
 
+#: Index into the device's (force_x, force_y) for each axis.
+FFB_API_FORCE_AXIS_INDEX = {
+    "CYCLIC_ROLL": 0,
+    "CYCLIC_PITCH": 1,
+    "COLLECTIVE": 1,
+    "PEDALS": 0,
+}
+
 #: Re-assert ENABLED at least this often even when unchanged (ms).
 FFB_API_ENABLED_HEARTBEAT_MS = 1000
 
@@ -173,9 +182,9 @@ class FFBApiHelicopter(Helicopter):
     #: Spring gain applied while the trim actuator is unclutched (TR_ON).
     ffb_api_tr_spring_gain: float = 0.0
 
-    #: Deviation from the trim reference that latches fly-through, as a fraction of
-    #: full axis travel.  ``_release_`` is the (smaller) value used to clear it, giving
-    #: hysteresis so a stick resting near the threshold does not chatter.
+    #: Deviation from the trim reference that sets fly-through, as a fraction of
+    #: axis travel (device force in force mode).  The smaller ``_release_`` value
+    #: clears it, giving hysteresis.
     ffb_api_fly_through_deadzone: float = 0.1
     ffb_api_fly_through_release_deadzone: float = 0.05
 
@@ -183,6 +192,10 @@ class FFBApiHelicopter(Helicopter):
     #: False = detect per control and mirror the result onto every axis of that
     #: control, for hardware that cannot separate cyclic pitch from roll.
     ffb_api_individual_fly_through: bool = True
+
+    #: Measure the deadzones above in device force instead of deviation.  Needs
+    #: force telemetry (VPforce hardware); otherwise flagged and ignored.
+    ffb_api_fly_through_force_mode: bool = False
 
     #: Sign conversion from the spec's convention to device axes (spec 3.5:
     #: positive = pitch nose-up / roll right / collective up / right pedal).
@@ -276,6 +289,7 @@ class FFBApiHelicopter(Helicopter):
         self._ffb_api_restart_recapture()
         self._ffb_api_tr_active = False
         self._ffb_api_fly_through_state = {}
+        self._ffb_api_fly_through_measure = {}
         self._ffb_api_warned_no_features = False
         self._ffb_api_warned_no_version = False
 
@@ -515,9 +529,26 @@ class FFBApiHelicopter(Helicopter):
         published variables stay per-axis either way, so the aircraft contract is
         identical in both modes.
 
+        Also changes the color of the deadzone sliders from the larger axis measure:
+        the deadzone while the measure is above it, the release deadzone while below.
+
         Telemetry:
             Written: _ffb_fly_through_<axis> (debug: int 0/1 per axis)
+            Written: _ffb_fly_through_measure (larger axis measure, fraction 0..1)
+            Written: _active_settings (via mark_settings_active)
         """
+        measure = None
+        for axis in results:
+            axis_measure = self._ffb_api_fly_through_measure.pop(axis, None)
+            if axis_measure is not None and (measure is None or axis_measure > measure):
+                measure = axis_measure
+        if measure is not None:
+            telem_data["_ffb_fly_through_measure"] = measure
+            if measure > self.ffb_api_fly_through_deadzone:
+                self.mark_settings_active("ffb_api_fly_through_deadzone")
+            if measure < self.ffb_api_fly_through_release_deadzone:
+                self.mark_settings_active("ffb_api_fly_through_release_deadzone")
+
         if not self.ffb_api_individual_fly_through:
             combined = any(results.values())
             results = {axis: combined for axis in results}
@@ -527,7 +558,8 @@ class FFBApiHelicopter(Helicopter):
             telem_data[f"_ffb_fly_through_{axis.lower()}"] = int(active)
 
     def _ffb_api_detect_fly_through(self, axis, phys_norm, center_norm) -> bool:
-        """Position-deviation fly-through with hysteresis.
+        """Fly-through for ``axis`` with hysteresis, from device force in force mode
+        or deviation from the trim reference otherwise.
 
         The rig always publishes the best signal its hardware can produce; the spec
         deliberately does not ask which method was used (spec 3.7).
@@ -538,9 +570,26 @@ class FFBApiHelicopter(Helicopter):
             if was_active
             else self.ffb_api_fly_through_deadzone
         )
-        active = abs(phys_norm - center_norm) > deadzone
+        if self._ffb_api_force_mode():
+            measure = abs(self._get_device_forces()[FFB_API_FORCE_AXIS_INDEX[axis]])
+        else:
+            measure = abs(phys_norm - center_norm)
+        active = measure > deadzone
         self._ffb_api_fly_through_state[axis] = active
+        self._ffb_api_fly_through_measure[axis] = measure
         return active
+
+    def _ffb_api_force_mode(self) -> bool:
+        """Whether force-mode fly-through is selected and the device can supply it."""
+        if not self.ffb_api_fly_through_force_mode:
+            return False
+        caps = getattr(HapticEffect.device, 'caps', None)
+        if caps is not None and not caps.has_force_telemetry:
+            self.flag_error('FFB API Fly Through Force Mode is not supported on this device.\n'
+                            'It requires the force telemetry which is only available from VPforce '
+                            'hardware; the fly-through deadzones measure deviation instead.')
+            return False
+        return True
 
     # ------------------------------------------------------------------ #
     # aircraft -> rig reads
@@ -654,6 +703,7 @@ class FFBApiHelicopter(Helicopter):
         self._ffb_api_spring_init = 0
         self._ffb_api_walk.reset()
         self._ffb_api_fly_through_state = {}
+        self._ffb_api_fly_through_measure = {}
 
     def _ffb_api_recapture(self, *axes, tolerance=0.1):
         """Bring a displaced control back to the trim reference before its axis is sent.
