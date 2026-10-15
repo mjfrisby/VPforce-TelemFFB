@@ -144,17 +144,25 @@ class TestDefaultsXmlNestedGroups:
         entries = [d for d in root.findall('defaults') if d.findtext('name')]
         nested = [d for d in entries
                   if d.findtext('datatype') == 'group' and d.findtext('prereq')]
-        return entries, nested
+        return entries, nested, root
 
     def test_nested_groups_are_true_valued(self, parsed):
         """eliminate_no_prereq keeps children only under a true-valued
-        parent, and is_visible tests the same field before revealing them."""
-        _, nested = parsed
+        parent, and is_visible tests the same field before revealing them.
+        A group with no baseline value is scoped to the classes whose
+        classdefaults supply 'true' (ffb_api_options_group)."""
+        _, nested, root = parsed
         for g in nested:
-            assert g.findtext('value') == 'true', g.findtext('name')
+            name = g.findtext('name')
+            if g.find('value') is None:
+                supplied = [cd.findtext('value') for cd in root.iter()
+                            if cd.tag.startswith('classdefaults_') and cd.findtext('name') == name]
+                assert supplied and all(v == 'true' for v in supplied), name
+            else:
+                assert g.findtext('value') == 'true', name
 
     def test_nested_group_orders_avoid_magic_suffixes(self, parsed):
-        _, nested = parsed
+        _, nested, _ = parsed
         for g in nested:
             name, order = g.findtext('name'), g.findtext('order')
             assert '.0' not in order, f"{name}: '.0' marks a locked-open group"
@@ -163,7 +171,7 @@ class TestDefaultsXmlNestedGroups:
     def test_nested_group_children_are_well_formed(self, parsed):
         """Children must sort after their group and dodge the same two
         magic suffixes, or they render detached from it."""
-        entries, nested = parsed
+        entries, nested, _ = parsed
         for g in nested:
             gname = g.findtext('name')
             gorder = float(g.findtext('order'))
@@ -178,7 +186,7 @@ class TestDefaultsXmlNestedGroups:
     def test_nested_group_names_do_not_collide(self, parsed):
         """Parent lookup is a substring match, so a name contained in (or
         containing) another setting's name resolves to the wrong row."""
-        entries, nested = parsed
+        entries, nested, _ = parsed
         names = {e.findtext('name') for e in entries}
         for g in nested:
             gname = g.findtext('name')

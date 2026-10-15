@@ -598,6 +598,8 @@ Child settings reference this group's `name` via their `prereq` field.
 
 - Stored value: **must be** `"true"` — children are only retained (`eliminate_no_prereq`)
   and revealed (`is_visible`) when their parent group's value is `true`.
+  A group with no `<value>` gets `true` from a `<classdefaults_*>` row and appears only
+  for that class (`ffb_api_options_group`, `FFBApiHelicopter`).
 - A `group` item with no children pointing to it via `prereq` is automatically hidden.
 
 **Top-level vs nested groups.** A group with no `prereq` is a top-level section header
