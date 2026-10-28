@@ -2412,31 +2412,33 @@
 		<grouping>Basic</grouping>
 		<parentgroup>basic</parentgroup>
 		<order>1252</order>
-		<datatype>float</datatype>
+		<datatype>pct_float</datatype>
 		<name>hands_on_deadzone</name>
 		<displayname>Hands On Deadzone</displayname>
 		<prereq>spring_mode.FORCETRIM.CNTR_FT</prereq>
 		<render_prereq>!handson_force_mode</render_prereq>
 		<enable_prereq>!local_disable_axis_control</enable_prereq>
-		<info>Distance required to trigger a hands-on condition</info>
+		<info>Distance required to trigger a hands-on condition&lt;br&gt;&lt;br&gt;Green while the stick deviation is above it.</info>
 		<MSFS>true</MSFS>
 		<joystick>true</joystick>
-		<validvalues>0,100</validvalues>
+		<sliderfactor>0.1</sliderfactor>
+		<validvalues>0,200</validvalues>
 	</defaults>
 	<defaults>
 		<grouping>Basic</grouping>
 		<parentgroup>basic</parentgroup>
 		<order>1254</order>
-		<datatype>float</datatype>
+		<datatype>pct_float</datatype>
 		<name>hands_off_deadzone</name>
 		<displayname>Hands Off Deadzone</displayname>
 		<prereq>spring_mode.FORCETRIM.CNTR_FT</prereq>
 		<render_prereq>!handson_force_mode</render_prereq>
 		<enable_prereq>!local_disable_axis_control</enable_prereq>
-		<info>Distance at which hands-off resumes (set lower than hands-on)</info>
+		<info>Distance at which hands-off resumes (set lower than hands-on)&lt;br&gt;&lt;br&gt;Green while the stick deviation is below it. Flickering at rest: the value is too low.</info>
 		<MSFS>true</MSFS>
 		<joystick>true</joystick>
-		<validvalues>0,100</validvalues>
+		<sliderfactor>0.1</sliderfactor>
+		<validvalues>0,200</validvalues>
 	</defaults>
 	<defaults>
 		<grouping>Basic</grouping>
@@ -2448,7 +2450,7 @@
 		<prereq>spring_mode.FORCETRIM.CNTR_FT</prereq>
 		<render_prereq>handson_force_mode</render_prereq>
 		<enable_prereq>!local_disable_axis_control</enable_prereq>
-		<info>Force value to achieve hands-on detection</info>
+		<info>Force value to achieve hands-on detection&lt;br&gt;&lt;br&gt;Green while the stick force is above it.</info>
 		<MSFS>true</MSFS>
 		<joystick>true</joystick>
 		<sliderfactor>0.1</sliderfactor>
