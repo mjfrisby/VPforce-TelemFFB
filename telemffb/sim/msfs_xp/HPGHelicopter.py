@@ -331,6 +331,7 @@ class HPGHelicopter(Helicopter):
                 thresh = self.hands_on_force_threshold
 
                 is_hands_on_now = abs(force_x) > thresh or abs(force_y) > thresh
+                self._show_hands_on_measure(telem_data, max(abs(force_x), abs(force_y)), force_mode=True)
 
                 now_ms = int(time.perf_counter() * 1000)
 
@@ -352,6 +353,9 @@ class HPGHelicopter(Helicopter):
                         if self.handson_force_debug:
                             utils.dbprint('yellow', f"hands on: Waiting     (fx: {force_x}, fy: {force_y})")
                             logging.info(f"hands on: Waiting     (fx: {force_x}, fy: {force_y})")
+            else:
+                self._show_hands_on_measure(
+                    telem_data, max(hands_on_dict["x_deviation"], hands_on_dict["y_deviation"]))
 
             hands_on_x = hands_on_dict["x_result"]
             dev_x = hands_on_dict["x_deviation"]

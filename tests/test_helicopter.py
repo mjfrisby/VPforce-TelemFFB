@@ -1993,3 +1993,36 @@ class TestDispatchHandsOnState(BaseTelemetryEffectTestCase):
         assert telem.hands_on == 0
         assert telem.hands_on_x == 0
         assert telem.hands_on_y == 0
+
+
+class TestShowHandsOnMeasure(BaseTelemetryEffectTestCase):
+    """_show_hands_on_measure: hands-on slider color and live value."""
+
+    def _make_instance(self):
+        inst = self.create_aircraft_instance(
+            Helicopter, name="TestHeli", _test_sim_is_msfs=True, _test_device_type="joystick")
+        inst.hands_on_deadzone = 0.1
+        inst.hands_off_deadzone = 0.02
+        inst.hands_on_force_threshold = 0.03
+        inst._telem_data = BaseTelemetryData()
+        return inst
+
+    @pytest.mark.parametrize("measure, active", [
+        (0.15, ["hands_on_deadzone"]),
+        (0.05, None),
+        (0.01, ["hands_off_deadzone"]),
+    ])
+    def test_deviation_lights_the_deadzone_it_crosses(self, measure, active):
+        instance = self._make_instance()
+        instance._show_hands_on_measure(instance.telem_data, measure)
+        assert instance.telem_data["_active_settings"] == active
+        assert instance.telem_data["_hands_on_measure"] == measure
+
+    @pytest.mark.parametrize("measure, active", [
+        (0.05, ["hands_on_force_threshold"]),
+        (0.01, None),
+    ])
+    def test_force_mode_lights_only_the_threshold(self, measure, active):
+        instance = self._make_instance()
+        instance._show_hands_on_measure(instance.telem_data, measure, force_mode=True)
+        assert instance.telem_data["_active_settings"] == active

@@ -146,6 +146,9 @@ class MainWindow(QMainWindow):
     N_SLIDER_LIVE_TEXT_KEYS = {
         'ffb_api_fly_through_deadzone': '_ffb_fly_through_measure',
         'ffb_api_fly_through_release_deadzone': '_ffb_fly_through_measure',
+        'hands_on_deadzone': '_hands_on_measure',
+        'hands_off_deadzone': '_hands_on_measure',
+        'hands_on_force_threshold': '_hands_on_measure',
     }
     def __init__(self):
         super().__init__()

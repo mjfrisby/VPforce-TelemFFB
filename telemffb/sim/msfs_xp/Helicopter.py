@@ -148,6 +148,27 @@ class Helicopter(Aircraft, MsfsXpHeliControlsMixIn):
             "y_deviation_raw": raw_deviation_y,
         }
 
+    def _show_hands_on_measure(self, telem_data: BaseTelemetryData, measure: float, force_mode: bool = False):
+        """Change the color of the hands-on sliders from ``measure`` and show it on
+        their handles.
+
+        Deviation: the hands on deadzone while ``measure`` is above it, the hands off
+        deadzone while below.  Force mode: the force threshold while above it.
+
+        Telemetry:
+            Written: _hands_on_measure (larger axis deviation or force, fraction 0..1)
+            Written: _active_settings (via mark_settings_active)
+        """
+        telem_data["_hands_on_measure"] = measure
+        if force_mode:
+            if measure > self.hands_on_force_threshold:
+                self.mark_settings_active("hands_on_force_threshold")
+            return
+        if measure > self.hands_on_deadzone:
+            self.mark_settings_active("hands_on_deadzone")
+        if measure < self.hands_off_deadzone:
+            self.mark_settings_active("hands_off_deadzone")
+
     def _dispatch_hands_on_state(self, telem_data: BaseTelemetryData,
                                   hands_on_dict: dict, hands_on_either: bool):
         hands_on_x = hands_on_dict["x_result"]

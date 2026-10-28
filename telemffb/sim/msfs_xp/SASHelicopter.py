@@ -105,6 +105,8 @@ class SASHelicopter(Helicopter):
             else:
                 hands_on_dict = self.check_hands_on(self.hands_on_deadzone)
             hands_on_either = hands_on_dict["master_result"]
+            self._show_hands_on_measure(
+                telem_data, max(hands_on_dict["x_deviation"], hands_on_dict["y_deviation"]))
 
             self._dispatch_hands_on_state(telem_data, hands_on_dict, hands_on_either)
 
