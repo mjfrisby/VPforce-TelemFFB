@@ -847,7 +847,7 @@ class FFBApiHelicopter(Helicopter):
         self.spring_y.set_coefficient(gain, True)
         self.spring_x.set_offset(self.cpO_x)
         self.spring_y.set_offset(self.cpO_y)
-        self._spring_handle.name = "ffb_api_cyclic_spring"
+        self._spring_handle.name = "ffb_api_cyclic_tr_spring" if tr_on else "ffb_api_cyclic_spring"
         self._spring_handle.setCondition(self.spring_x)
         self._spring_handle.setCondition(self.spring_y)
         if not self._spring_handle.started:
@@ -914,7 +914,7 @@ class FFBApiHelicopter(Helicopter):
 
         self.spring_y.set_coefficient(gain, True)
         self.spring_y.set_offset(self.cpO_y)
-        self._spring_handle.name = "ffb_api_collective_spring"
+        self._spring_handle.name = "ffb_api_collective_tr_spring" if tr_on else "ffb_api_collective_spring"
         self._spring_handle.setCondition(self.spring_y)
         if not self._spring_handle.started:
             self._spring_handle.start()
@@ -969,7 +969,7 @@ class FFBApiHelicopter(Helicopter):
 
         self.spring_x.set_coefficient(gain, True)
         self.spring_x.set_offset(self.cpO_x)
-        self._spring_handle.name = "ffb_api_pedal_spring"
+        self._spring_handle.name = "ffb_api_pedal_tr_spring" if tr_on else "ffb_api_pedal_spring"
         self._spring_handle.setCondition(self.spring_x)
         if not self._spring_handle.started:
             self._spring_handle.start()

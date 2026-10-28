@@ -1379,6 +1379,12 @@ class TestFFBApiSettingsScope:
             assert setting == f"{effect}_gain"
             assert setting in defined, f"{setting} is not a setting in defaults.xml"
             assert hasattr(FFBApiHelicopter, setting), f"the class never reads {setting}"
+        for effect in ("ffb_api_cyclic_tr_spring", "ffb_api_collective_tr_spring",
+                       "ffb_api_pedal_tr_spring"):
+            _label, setting = EffectTranslator.effect_dict[effect]
+            assert setting == "ffb_api_tr_spring_gain"
+            assert setting in defined, f"{setting} is not a setting in defaults.xml"
+            assert hasattr(FFBApiHelicopter, setting), f"the class never reads {setting}"
 
     def test_no_setting_is_both_excluded_and_supplied(self, root):
         """A positive row for an excluded name is dead code, not an override.
