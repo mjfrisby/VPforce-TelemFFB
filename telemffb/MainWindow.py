@@ -124,32 +124,6 @@ DEVICE_VIEW_LABELS = {
 
 
 class MainWindow(QMainWindow):
-    #: Number-sliders whose handle shows a live force readout: setting name
-    #: -> the telemetry key its aircraft code publishes (fraction 0..1 of
-    #: the relevant full scale, so 100% on the handle means clipping/max).
-    N_SLIDER_LIVE_KEYS = {
-        'max_elevator_coeff': '_pct_max_e',
-        'max_aileron_coeff': '_pct_max_a',
-        'max_rudder_coeff': '_pct_max_r',
-        'steering_friction_intensity': '_pct_steer_f',
-        'tap_spring_gain_x': '_pct_tap_x',
-        'tap_spring_gain_y': '_pct_tap_y',
-        'tap_effect_constant_gain': '_pct_tap_const',
-        'tap_effect_periodic_gain': '_pct_tap_periodic',
-        'tap_effect_damper_gain': '_pct_tap_damper',
-        'tap_effect_inertia_gain': '_pct_tap_inertia',
-        'tap_effect_friction_gain': '_pct_tap_friction',
-    }
-    #: Number sliders whose handle shows a live value: setting name -> telemetry
-    #: key (a fraction, shown as a percentage).  The handle color still follows
-    #: the active settings.
-    N_SLIDER_LIVE_TEXT_KEYS = {
-        'ffb_api_fly_through_deadzone': '_ffb_fly_through_measure',
-        'ffb_api_fly_through_release_deadzone': '_ffb_fly_through_measure',
-        'hands_on_deadzone': '_hands_on_measure',
-        'hands_off_deadzone': '_hands_on_measure',
-        'hands_on_force_threshold': '_hands_on_measure',
-    }
     def __init__(self):
         super().__init__()
         self.preview = EffectPreviewController(self)   # effect previews, see preview_controller

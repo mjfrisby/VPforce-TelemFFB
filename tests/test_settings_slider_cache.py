@@ -12,7 +12,6 @@ The real SettingsLayout.__init__ reads XML and settings globals, so this
 drives the unbound methods on a plain QGridLayout standing in for it.
 """
 import os
-from types import SimpleNamespace
 
 import pytest
 
@@ -22,6 +21,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PyQt6.QtWidgets import QApplication, QGridLayout, QHBoxLayout, QLabel, QWidget
 
 from telemffb.ui.widgets.SettingsLayout import SettingsLayout
+from telemffb.utils import LiveValueTranslator
 from telemffb.ui.widgets.custom_widgets import NoWheelSlider, NoWheelNumberSlider
 
 pytestmark = pytest.mark.unit
@@ -32,10 +32,15 @@ def qapp():
     return QApplication.instance() or QApplication([])
 
 
+@pytest.fixture(autouse=True)
+def live_keys(monkeypatch):
+    monkeypatch.setattr(LiveValueTranslator, 'readout_dict', {'max_elevator_coeff': '_pct_max_e'})
+    monkeypatch.setattr(LiveValueTranslator, 'text_dict', {'fly_through_deadzone': '_measure'})
+
+
 def _stand_in_layout():
     host = QWidget()
     layout = QGridLayout(host)
-    layout.mainwindow = SimpleNamespace(N_SLIDER_LIVE_KEYS={'max_elevator_coeff': '_pct_max_e'})
     layout.repaint_active_settings = lambda: None
     layout._iter_layout_widgets = SettingsLayout._iter_layout_widgets
     layout._clear_sub_layout = lambda sub: SettingsLayout._clear_sub_layout(layout, sub)
@@ -108,7 +113,6 @@ def test_a_live_readout_slider_is_also_painted_as_active(qapp):
     """A live-text slider (dfsld_, pct_float) is in both caches."""
     from telemffb.ui.theme.tokens import ACTIVE_GREEN
     host, layout = _stand_in_layout()
-    layout.mainwindow.N_SLIDER_LIVE_TEXT_KEYS = {'fly_through_deadzone': '_measure'}
     w = _add_rows(layout)
     readout = NoWheelNumberSlider()
     readout.setObjectName('dfsld_fly_through_deadzone')
