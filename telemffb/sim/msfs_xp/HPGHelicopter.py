@@ -214,6 +214,23 @@ class HPGHelicopter(Helicopter):
             "deviation": deviation_x,
         }
 
+    def _show_feet_on_measure(self, telem_data: BaseTelemetryData, measure: float):
+        """Change the color of the feet-on sliders from ``measure`` and show it on
+        their handles.
+
+        The feet on deadzone while ``measure`` is above it, the feet off deadzone
+        while below.
+
+        Telemetry:
+            Written: _feet_on_measure (pedal deviation, fraction 0..1)
+            Written: _active_settings (via mark_settings_active)
+        """
+        telem_data["_feet_on_measure"] = measure
+        if measure > self.feet_on_deadzone:
+            self.mark_settings_active("feet_on_deadzone")
+        if measure < self.feet_off_deadzone:
+            self.mark_settings_active("feet_off_deadzone")
+
     @override
     def msfs_update_heli_controls(self, telem_data: BaseTelemetryData):
         """Update cyclic FFB spring, SEMA follow-up trim, and hands-on detection.
@@ -540,6 +557,7 @@ class HPGHelicopter(Helicopter):
                     feet_on_dict = self.check_feet_on(self.feet_on_deadzone)
                 feet_on_pedals = feet_on_dict['result']
                 dev_x = feet_on_dict['deviation']
+                self._show_feet_on_measure(telem_data, dev_x)
 
                 if feet_on_pedals:
                     self._simconnect.set_simdatum_to_msfs("L:FFB_FEET_ON_PEDALS", 1, units="number")
