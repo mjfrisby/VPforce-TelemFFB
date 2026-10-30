@@ -859,11 +859,9 @@ class SettingsLayout(QGridLayout):
         winning, so folding them into one bucket each reproduces the same
         final paint without doing it twice.
 
-        ``N_SLIDER_LIVE_TEXT_KEYS`` sliders go in both ``live_text_sliders`` and
+        ``LiveValueTranslator.text_dict`` sliders go in both ``live_text_sliders`` and
         ``_active_setting_sliders``: only their text is live.
         """
-        live_keys = getattr(self.mainwindow, 'N_SLIDER_LIVE_KEYS', {})
-        live_text_keys = getattr(self.mainwindow, 'N_SLIDER_LIVE_TEXT_KEYS', {})
         active_setting_sliders = []
         live_key_sliders = []
         live_text_sliders = []
@@ -877,12 +875,12 @@ class SettingsLayout(QGridLayout):
                 continue
             name = slider.objectName().replace('sld_', '')
             if isinstance(slider, NoWheelNumberSlider):
-                live_key = live_keys.get(name)
+                live_key = utils.LiveValueTranslator.readout_key(name)
                 if live_key is not None:
                     live_key_sliders.append((slider, live_key))
                     continue
                 # the setting name follows sld_, or dfsld_ for pct_float
-                text_key = live_text_keys.get(slider.objectName().split('sld_', 1)[-1])
+                text_key = utils.LiveValueTranslator.text_key(slider.objectName().split('sld_', 1)[-1])
                 if text_key is not None:
                     live_text_sliders.append((slider, text_key))
             active_setting_sliders.append(slider)
@@ -1306,7 +1304,7 @@ class SettingsLayout(QGridLayout):
         d_slider.setObjectName(f"dsld_{item['name']}")
 
         # a live value needs the number slider's wider handle
-        if item['name'] in getattr(self.mainwindow, 'N_SLIDER_LIVE_TEXT_KEYS', {}):
+        if utils.LiveValueTranslator.text_key(item['name']) is not None:
             df_slider = NoWheelNumberSlider()
             df_slider.setHandleWidth(LIVE_TEXT_HANDLE_WIDTH)
         else:

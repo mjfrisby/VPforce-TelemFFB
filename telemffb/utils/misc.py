@@ -31,6 +31,7 @@ from ._math import to_number
 __all__ = [
     "schedule_on_main_thread",
     "EffectTranslator",
+    "LiveValueTranslator",
     "Destroyable",
     "sanitize_dict",
     "flatten_dict",
@@ -236,6 +237,48 @@ class EffectTranslator:
                     return cls.effect_dict.get(k, [f"No Lookup: {k}", ''])
 
         return [f"No Lookup: {key}", '']
+
+
+class LiveValueTranslator:
+    """
+    Number sliders whose handle shows a live value published by aircraft code.  In both dictionaries, the "key" is
+    the setting name and the "value" is the telemetry key the aircraft code writes (a fraction 0..1, shown as a
+    percentage on the handle).
+    """
+
+    #: Live force readout: the handle color fades from grey to green with the value
+    #: (fraction of the relevant full scale, so 100% means clipping/max).
+    readout_dict = {
+        'max_elevator_coeff': '_pct_max_e',
+        'max_aileron_coeff': '_pct_max_a',
+        'max_rudder_coeff': '_pct_max_r',
+        'steering_friction_intensity': '_pct_steer_f',
+        'tap_spring_gain_x': '_pct_tap_x',
+        'tap_spring_gain_y': '_pct_tap_y',
+        'tap_effect_constant_gain': '_pct_tap_const',
+        'tap_effect_periodic_gain': '_pct_tap_periodic',
+        'tap_effect_damper_gain': '_pct_tap_damper',
+        'tap_effect_inertia_gain': '_pct_tap_inertia',
+        'tap_effect_friction_gain': '_pct_tap_friction',
+    }
+    #: Live value as text only: the handle color still follows the active settings.
+    text_dict = {
+        'ffb_api_fly_through_deadzone': '_ffb_fly_through_measure',
+        'ffb_api_fly_through_release_deadzone': '_ffb_fly_through_measure',
+        'hands_on_deadzone': '_hands_on_measure',
+        'hands_off_deadzone': '_hands_on_measure',
+        'hands_on_force_threshold': '_hands_on_measure',
+    }
+
+    @classmethod
+    def readout_key(cls, setting):
+        """Telemetry key of ``setting``'s live force readout, or None."""
+        return cls.readout_dict.get(setting)
+
+    @classmethod
+    def text_key(cls, setting):
+        """Telemetry key of ``setting``'s live text value, or None."""
+        return cls.text_dict.get(setting)
 
 
 class Destroyable:
