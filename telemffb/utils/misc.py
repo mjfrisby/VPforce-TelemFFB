@@ -268,6 +268,8 @@ class LiveValueTranslator:
         'hands_on_deadzone': '_hands_on_measure',
         'hands_off_deadzone': '_hands_on_measure',
         'hands_on_force_threshold': '_hands_on_measure',
+        'feet_on_deadzone': '_feet_on_measure',
+        'feet_off_deadzone': '_feet_on_measure',
     }
 
     @classmethod
