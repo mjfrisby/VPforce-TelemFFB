@@ -20794,6 +20794,13 @@
 		<device>pedals</device>
 	</models>
 	<models>
+		<name>ffb_api_collective_spring_gain</name>
+		<model>AS365 N2.*</model>
+		<value>0</value>
+		<sim>MSFS</sim>
+		<device>collective</device>
+	</models>
+	<models>
 		<name>enable_custom_x_axis</name>
 		<model>AS365 N2.*</model>
 		<value>true</value>
@@ -20863,6 +20870,13 @@
 		<value>0.5</value>
 		<sim>MSFS</sim>
 		<device>pedals</device>
+	</models>
+	<models>
+		<name>ffb_api_collective_spring_gain</name>
+		<model>AS365 F/N.*</model>
+		<value>0</value>
+		<sim>MSFS</sim>
+		<device>collective</device>
 	</models>
 	<models>
 		<name>enable_custom_x_axis</name>
